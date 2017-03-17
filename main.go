@@ -5,21 +5,15 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/Google/uuid"
+	"github.com/CactusDev/CactusAPI-Go/command"
+	"github.com/CactusDev/CactusAPI-Go/schemas"
 	"github.com/gorilla/mux"
 )
 
-// Message is the base for the API's JSON response
-type Message struct {
-	Data string `json:"data"`
-	ID   string `json:"id,omitempty"`
-}
-
 // HomeHandler handles all requests to the base URL
 func HomeHandler(w http.ResponseWriter, req *http.Request) {
-	m := Message{
-		Data: "Ohai, you're home!",
-		ID:   uuid.New().String(),
+	m := schemas.Message{
+		Data: "spam",
 	}
 	response, err := json.Marshal(m)
 	if err != nil {
@@ -30,13 +24,9 @@ func HomeHandler(w http.ResponseWriter, req *http.Request) {
 	w.Write(response)
 }
 
-// CommandHandler handles all requests to list commands
-func CommandHandler(w http.ResponseWriter, req *http.Request) {
-
-}
-
 func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", HomeHandler)
+	r.HandleFunc("/command/{commandName}", command.Handler)
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
