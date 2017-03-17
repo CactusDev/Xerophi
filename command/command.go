@@ -5,11 +5,26 @@ import (
 	"net/http"
 	"time"
 
+	"log"
+
+	"fmt"
+
+	"github.com/CactusDev/CactusAPI-Go/rethink"
 	"github.com/CactusDev/CactusAPI-Go/schemas"
 	"github.com/Google/uuid"
+	"github.com/gorilla/mux"
 )
 
-// Attributes is a schema for JSON responses regarding commands
+type dbCommand struct {
+	count     int       `gorethink:"count"`
+	createdAt time.Time `gorethink:"createdAt"`
+	enabled   bool      `gorethink:"enabled"`
+	name      string    `gorethink:"name"`
+	response  Response  `gorethink:"response"`
+	token     string    `gorethink:"token"`
+	id        string    `gorethink:"-"`
+}
+
 type attributes struct {
 	Name      string          `json:"name"`
 	Response  Response        `json:"response"`
@@ -38,7 +53,32 @@ type MessageSchema struct {
 
 // Handler handles all requests to list commands
 func Handler(w http.ResponseWriter, req *http.Request) {
-	// rVars := mux.Vars(req)
+	conn := rethink.Connection{
+		DB:    "cactus",
+		Table: "commands",
+		URL:   "localhost",
+	}
+
+	err := conn.Connect()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	response, err := conn.GetTable()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	bytes, _ := json.Marshal(response)
+	fmt.Println(string(bytes))
+
+	response, err = conn.GetByUUID("b9a960fd-9b31-47e0-84c4-bd05c78e793c")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	bytes, _ = json.Marshal(response)
+	fmt.Println(string(bytes))
+
+	rVars := mux.Vars(req)
 
 	attr := attributes{
 		Name: "foo",
@@ -56,7 +96,7 @@ func Handler(w http.ResponseWriter, req *http.Request) {
 			},
 		},
 		CreatedAt: time.Now(),
-		Token:     "paradigmshift3d",
+		Token:     rVars["token"],
 		Enabled:   true,
 		Count:     0,
 		Arguments: []MessageSchema{},

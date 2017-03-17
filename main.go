@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/CactusDev/CactusAPI-Go/command"
+	"github.com/CactusDev/CactusAPI-Go/quotes"
 	"github.com/CactusDev/CactusAPI-Go/schemas"
 	"github.com/Google/uuid"
 	"github.com/gorilla/mux"
@@ -31,7 +32,8 @@ func HomeHandler(w http.ResponseWriter, req *http.Request) {
 
 func main() {
 	r := mux.NewRouter()
-	r.HandleFunc("/", HomeHandler)
-	r.HandleFunc("/command/{commandName}", command.Handler)
-	log.Fatal(http.ListenAndServe(":8080", r))
+	r.HandleFunc("/", HomeHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc("/{token}/command", command.Handler).Methods("GET", "OPTIONS")
+	r.HandleFunc("/{token}/quote", quotes.Handler).Methods("GET", "OPTIONS")
+	log.Fatal(http.ListenAndServe(":8000", r))
 }
