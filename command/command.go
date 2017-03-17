@@ -9,13 +9,6 @@ import (
 	"github.com/Google/uuid"
 )
 
-// Command foo
-type Command struct {
-	ID         string     `json:"id"`
-	Attributes attributes `json:"attributes"`
-	Type       string     `json:"type"`
-}
-
 // Attributes is a schema for JSON responses regarding commands
 type attributes struct {
 	Name      string          `json:"name"`
@@ -47,25 +40,21 @@ type MessageSchema struct {
 func Handler(w http.ResponseWriter, req *http.Request) {
 	// rVars := mux.Vars(req)
 
-	message := []MessageSchema{
-		MessageSchema{
-			Type: "text",
-			Data: "foobar test123",
-			Text: "foobar test123",
-		},
-	}
-
-	response := Response{
-		User:    "paradigmshift3d",
-		Action:  false,
-		Role:    0,
-		Target:  nil,
-		Message: message,
-	}
-
 	attr := attributes{
-		Name:      "foo",
-		Response:  response,
+		Name: "foo",
+		Response: Response{
+			User:   "paradigmshift3d",
+			Action: false,
+			Role:   0,
+			Target: nil,
+			Message: []MessageSchema{
+				MessageSchema{
+					Type: "text",
+					Data: "foobar test123",
+					Text: "foobar test123",
+				},
+			},
+		},
 		CreatedAt: time.Now(),
 		Token:     "paradigmshift3d",
 		Enabled:   true,
@@ -74,7 +63,7 @@ func Handler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	m := schemas.Message{
-		Data: Command{
+		Data: schemas.Data{
 			ID:         uuid.New().String(),
 			Attributes: attr,
 			Type:       "command",

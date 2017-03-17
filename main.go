@@ -7,13 +7,18 @@ import (
 
 	"github.com/CactusDev/CactusAPI-Go/command"
 	"github.com/CactusDev/CactusAPI-Go/schemas"
+	"github.com/Google/uuid"
 	"github.com/gorilla/mux"
 )
 
 // HomeHandler handles all requests to the base URL
 func HomeHandler(w http.ResponseWriter, req *http.Request) {
 	m := schemas.Message{
-		Data: "spam",
+		Data: schemas.Data{
+			ID:         uuid.New().String(),
+			Attributes: "stuff",
+			Type:       "nil",
+		},
 	}
 	response, err := json.Marshal(m)
 	if err != nil {
