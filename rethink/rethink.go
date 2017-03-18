@@ -1,8 +1,6 @@
 package rethink
 
-import (
-	rethink "gopkg.in/gorethink/gorethink.v3"
-)
+import rethink "gopkg.in/gorethink/gorethink.v3"
 
 // Connection defines a connection to a RethinkDB table within a database
 type Connection struct {
@@ -48,23 +46,33 @@ func (c *Connection) GetSingle(field string, value interface{}) (interface{}, er
 	if err != nil {
 		return nil, err
 	}
-	return res, nil
+	var response interface{}
+	res.One(&response)
+
+	return response, nil
 }
 
 // GetByUUID returns a single object from the current table via the GetByUUID
 func (c *Connection) GetByUUID(uuid string) (interface{}, error) {
 	res, err := rethink.Table(c.Table).Get(uuid).Run(c.Session)
+	defer res.Close()
 	if err != nil {
 		return nil, err
 	}
-	return res, nil
+	var response interface{}
+	res.One(&response)
+
+	return response, nil
 }
 
 // GetTable returns all the rescords in a table
-func (c *Connection) GetTable() (interface{}, error) {
+func (c *Connection) GetTable() ([]interface{}, error) {
 	res, err := rethink.Table(c.Table).Run(c.Session)
+	defer res.Close()
 	if err != nil {
 		return nil, err
 	}
-	return res, nil
+	var response []interface{}
+	res.All(&response)
+	return response, nil
 }

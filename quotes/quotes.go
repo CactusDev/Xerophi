@@ -7,7 +7,6 @@ import (
 
 	"github.com/CactusDev/CactusAPI-Go/schemas"
 	"github.com/Google/uuid"
-	"github.com/gorilla/mux"
 )
 
 type attributes struct {
@@ -17,9 +16,7 @@ type attributes struct {
 }
 
 // Handler handles all requests to the /{token}/quote endpoint
-func Handler(w http.ResponseWriter, req *http.Request) {
-	rVars := mux.Vars(req)
-
+func Handler(w http.ResponseWriter, req *http.Request, rVars map[string]string) {
 	attr := attributes{
 		Quote:   "Spam eggs!",
 		QuoteID: 1,

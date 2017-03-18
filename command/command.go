@@ -7,12 +7,9 @@ import (
 
 	"log"
 
-	"fmt"
-
 	"github.com/CactusDev/CactusAPI-Go/rethink"
 	"github.com/CactusDev/CactusAPI-Go/schemas"
 	"github.com/Google/uuid"
-	"github.com/gorilla/mux"
 )
 
 type dbCommand struct {
@@ -51,61 +48,34 @@ type MessageSchema struct {
 	Text string `json:"text"`
 }
 
+// PatchHandler handles all PATCH requests to /:token/command/:commandName
+func PatchHandler(w http.ResponseWriter, req *http.Request, vars map[string]string) {
+	res, _ := json.Marshal(vars)
+	w.Write(res)
+	w.WriteHeader(http.StatusAccepted)
+}
+
 // Handler handles all requests to list commands
-func Handler(w http.ResponseWriter, req *http.Request) {
+func Handler(w http.ResponseWriter, req *http.Request, rVars map[string]string) {
+
 	conn := rethink.Connection{
 		DB:    "cactus",
 		Table: "commands",
 		URL:   "localhost",
 	}
-
 	err := conn.Connect()
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-
 	response, err := conn.GetTable()
 	if err != nil {
 		log.Fatal(err.Error())
-	}
-	bytes, _ := json.Marshal(response)
-	fmt.Println(string(bytes))
-
-	response, err = conn.GetByUUID("b9a960fd-9b31-47e0-84c4-bd05c78e793c")
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	bytes, _ = json.Marshal(response)
-	fmt.Println(string(bytes))
-
-	rVars := mux.Vars(req)
-
-	attr := attributes{
-		Name: "foo",
-		Response: Response{
-			User:   "paradigmshift3d",
-			Action: false,
-			Role:   0,
-			Target: nil,
-			Message: []MessageSchema{
-				MessageSchema{
-					Type: "text",
-					Data: "foobar test123",
-					Text: "foobar test123",
-				},
-			},
-		},
-		CreatedAt: time.Now(),
-		Token:     rVars["token"],
-		Enabled:   true,
-		Count:     0,
-		Arguments: []MessageSchema{},
 	}
 
 	m := schemas.Message{
 		Data: schemas.Data{
 			ID:         uuid.New().String(),
-			Attributes: attr,
+			Attributes: response,
 			Type:       "command",
 		},
 	}

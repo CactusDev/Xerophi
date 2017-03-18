@@ -9,8 +9,8 @@ type Data struct {
 
 // Message is the base for the API's JSON response
 type Message struct {
-	Data Data `json:"data"`
-	Meta Meta `json:"meta,omitempty"`
+	Data interface{} `json:"data,omitempty"`
+	Meta Meta        `json:"meta,omitempty"`
 }
 
 // Meta can take any type as extra information related to the response
