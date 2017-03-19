@@ -27,9 +27,7 @@ func HomeHandler(w http.ResponseWriter, req *http.Request, _ map[string]string) 
 
 // HomeOptions returns an array of the HTTP request options available for this endpoint
 func HomeOptions(w http.ResponseWriter, req *http.Request, _ map[string]string) {
-	m := schemas.Message{
-		Data: [2]string{"GET", "OPTIONS"},
-	}
+	m := [2]string{"GET", "OPTIONS"}
 	response, err := json.Marshal(m)
 	if err != nil {
 		http.Error(w, err.Error(), 500)

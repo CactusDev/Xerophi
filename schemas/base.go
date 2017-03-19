@@ -2,7 +2,7 @@ package schemas
 
 // Data is the JSON-API spec for returning
 type Data struct {
-	ID         string      `json:"id"`
+	ID         string      `json:"id,omitempty"`
 	Attributes interface{} `json:"attributes"`
 	Type       string      `json:"type"`
 }
