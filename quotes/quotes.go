@@ -1,14 +1,13 @@
 package quotes
 
 import (
-	"log"
-	"net/http"
-
 	"encoding/json"
+	"net/http"
 
 	"github.com/CactusDev/CactusAPI-Go/rethink"
 	"github.com/CactusDev/CactusAPI-Go/schemas"
 	"github.com/CactusDev/CactusAPI-Go/util"
+	log "github.com/Sirupsen/logrus"
 )
 
 var conn = rethink.Connection{
@@ -17,9 +16,12 @@ var conn = rethink.Connection{
 	URL:   "localhost",
 }
 
-// PostHandler handles POST requests to /:token/quote endpoint
+// PostHandler handles all POST requests to /:token/quote endpoint
 func PostHandler(w http.ResponseWriter, req *http.Request, vars map[string]string) {
 
+	// w.Header().Set("Content-Type", "application/json")
+	// w.WriteHeader(http.StatusOK)
+	// w.Write(res)
 }
 
 // Handler handles all requests to the /:token/quote endpoint
@@ -38,6 +40,7 @@ func Handler(w http.ResponseWriter, req *http.Request, vars map[string]string) {
 		err := util.FillStruct(quote.(map[string]interface{}), &attr)
 		if err != nil {
 			http.Error(w, err.Error(), 500)
+			return
 		}
 	}
 
@@ -53,6 +56,7 @@ func Handler(w http.ResponseWriter, req *http.Request, vars map[string]string) {
 		http.Error(w, err.Error(), 500)
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(res)
 }

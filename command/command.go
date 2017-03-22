@@ -4,18 +4,18 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"log"
-
 	"github.com/CactusDev/CactusAPI-Go/rethink"
 	"github.com/CactusDev/CactusAPI-Go/schemas"
 	"github.com/Google/uuid"
+	logger "github.com/Sirupsen/logrus"
 )
 
 // PatchHandler handles all PATCH requests to /:token/command/:commandName
 func PatchHandler(w http.ResponseWriter, req *http.Request, vars map[string]string) {
 	res, _ := json.Marshal(vars)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	w.Write(res)
-	w.WriteHeader(http.StatusAccepted)
 }
 
 // Handler handles all requests to list commands
@@ -27,11 +27,16 @@ func Handler(w http.ResponseWriter, req *http.Request, vars map[string]string) {
 	}
 	err := conn.Connect()
 	if err != nil {
-		log.Fatal(err.Error())
+		logger.Error(err.Error())
+		logger.Error("Failed to connect to RethinkDB! Is it running?")
+		http.Error(w, "Internal Server Error!", 500)
+		return
 	}
 	response, err := conn.GetTable()
 	if err != nil {
-		log.Fatal(err.Error())
+		logger.Error(err.Error())
+		http.Error(w, "Internal Server Error!", 500)
+		return
 	}
 
 	m := schemas.Message{
@@ -43,9 +48,12 @@ func Handler(w http.ResponseWriter, req *http.Request, vars map[string]string) {
 	}
 	res, err := json.Marshal(m)
 	if err != nil {
+		logger.Error(err.Error())
 		http.Error(w, err.Error(), 500)
+		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(res)
 }
