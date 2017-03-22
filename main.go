@@ -12,7 +12,7 @@ import (
 )
 
 // HomeHandler handles all requests to the base URL
-func HomeHandler(w http.ResponseWriter, req *http.Request, _ map[string]string) {
+func HomeHandler(w http.ResponseWriter, req *http.Request) {
 	m := schemas.Message{
 		Data: "Ohai! You're home!",
 	}
@@ -26,7 +26,7 @@ func HomeHandler(w http.ResponseWriter, req *http.Request, _ map[string]string) 
 }
 
 // HomeOptions returns an array of the HTTP request options available for this endpoint
-func HomeOptions(w http.ResponseWriter, req *http.Request, _ map[string]string) {
+func HomeOptions(w http.ResponseWriter, req *http.Request) {
 	m := [2]string{"GET", "OPTIONS"}
 	response, err := json.Marshal(m)
 	if err != nil {
@@ -40,9 +40,10 @@ func HomeOptions(w http.ResponseWriter, req *http.Request, _ map[string]string) 
 func main() {
 	router := mux.New()
 	api := router.NewGroup("/api/v1")
+	root := router.UsingContext()
 
-	router.GET("/", HomeHandler)
-	router.OPTIONS("/", HomeOptions)
+	root.GET("/:test", HomeHandler)
+	root.OPTIONS("/", HomeOptions)
 	api.GET("/:token/command", command.Handler)
 	api.PATCH("/:token/command/:commandName", command.PatchHandler)
 	api.GET("/:token/quote", quotes.Handler)
