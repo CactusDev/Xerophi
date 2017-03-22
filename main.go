@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"net/http"
 
 	"github.com/CactusDev/CactusAPI-Go/command"
@@ -17,7 +16,7 @@ var logger = log.New()
 var port = new(int)
 
 // HomeHandler handles all requests to the base URL
-func HomeHandler(w http.ResponseWriter, req *http.Request, _ map[string]string) {
+func HomeHandler(w http.ResponseWriter, req *http.Request) {
 	m := schemas.Message{
 		Data: "Ohai! You're home!",
 	}
@@ -31,7 +30,7 @@ func HomeHandler(w http.ResponseWriter, req *http.Request, _ map[string]string) 
 }
 
 // HomeOptions returns an array of the HTTP request options available for this endpoint
-func HomeOptions(w http.ResponseWriter, req *http.Request, _ map[string]string) {
+func HomeOptions(w http.ResponseWriter, req *http.Request) {
 	m := [2]string{"GET", "OPTIONS"}
 	response, err := json.Marshal(m)
 	if err != nil {
@@ -62,13 +61,14 @@ func init() {
 func main() {
 	router := mux.New()
 	api := router.NewGroup("/api/v1")
+	root := router.UsingContext()
 
 	logger.WithField("port", *port).Info("Starting API server!")
 
-	router.GET("/", HomeHandler)
-	router.OPTIONS("/", HomeOptions)
-	api.GET("/user/:token/command", command.Handler)
-	api.PATCH("/user/:token/command/:commandName", command.PatchHandler)
-	api.GET("/user/:token/quote", quotes.Handler)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), router))
+	root.GET("/:test", HomeHandler)
+	root.OPTIONS("/", HomeOptions)
+	api.GET("/:token/command", command.Handler)
+	api.PATCH("/:token/command/:commandName", command.PatchHandler)
+	api.GET("/:token/quote", quotes.Handler)
+	log.Fatal(http.ListenAndServe(":8000", router))
 }
