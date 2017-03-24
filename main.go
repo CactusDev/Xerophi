@@ -9,6 +9,7 @@ import (
 	"github.com/CactusDev/CactusAPI-Go/quotes"
 	"github.com/CactusDev/CactusAPI-Go/schemas"
 	log "github.com/Sirupsen/logrus"
+	"github.com/asaskevich/govalidator"
 	mux "github.com/dimfeld/httptreemux"
 )
 
@@ -56,6 +57,8 @@ func init() {
 	if *debug || *verbose {
 		logger.Level = log.DebugLevel
 	}
+
+	govalidator.SetFieldsRequiredByDefault(true)
 }
 
 func main() {

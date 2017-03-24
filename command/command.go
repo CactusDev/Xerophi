@@ -2,6 +2,7 @@ package command
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/CactusDev/CactusAPI-Go/rethink"
@@ -12,7 +13,23 @@ import (
 
 // PatchHandler handles all PATCH requests to /:token/command/:commandName
 func PatchHandler(w http.ResponseWriter, req *http.Request, vars map[string]string) {
-	res, _ := json.Marshal(vars)
+	decoder := json.NewDecoder(req.Body)
+	var t = CreationSchema{}
+	err := decoder.Decode(&t)
+	if err != nil {
+		http.Error(w, "Internal Server Error!", 500)
+		return
+	}
+	defer req.Body.Close()
+
+	success, err := t.Validate()
+	log.Println(success)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	res, err := json.Marshal(t)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(res)
