@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "title": "Command schema",
+  "description": "Stores information about a CactusBot command",
+  "type": "object",
+  "definitions": {
+    "response": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "type": "string"
+        },
+        "message": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "target": {
+          "type": "string"
+        },
+        "action": {
+          "type": "boolean",
+          "default": false
+        },
+        "role": {
+          "type": "integer",
+          "default": 0
+        }
+      },
+      "required": ["message"],
+      "id": "command.response"
+    }
+  },
+  "properties": {
+    "count": {
+      "type": "number",
+      "description": "Keeps track of number of times the command has been run",
+      "default": 0
+    },
+    "token": {
+      "type": "string"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": "true"
+    },
+    "name": {
+      "type": "string",
+      "description": "The commands name, used when running the command"
+    },
+    "response": {
+      "$ref": "#/definitions/command.response"
+    }
+  }
+}
