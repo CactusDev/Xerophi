@@ -1,2 +1,2 @@
-# CactusAPI-Go
+# Xerophi
 The future of the CactusAPI
