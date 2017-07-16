@@ -1,77 +1,35 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
-	"net/http"
 
-	"github.com/CactusDev/CactusAPI-Go/command"
-	"github.com/CactusDev/CactusAPI-Go/quotes"
-	"github.com/CactusDev/CactusAPI-Go/schemas"
 	log "github.com/Sirupsen/logrus"
-	"github.com/asaskevich/govalidator"
-	mux "github.com/dimfeld/httptreemux"
 )
 
 var logger = log.New()
-var port = new(int)
-
-// HomeHandler handles all requests to the base URL
-func HomeHandler(w http.ResponseWriter, req *http.Request) {
-	m := schemas.Message{
-		Data: "Ohai! You're home!",
-	}
-	response, err := json.Marshal(m)
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write(response)
-}
-
-// HomeOptions returns an array of the HTTP request options available for this endpoint
-func HomeOptions(w http.ResponseWriter, req *http.Request) {
-	m := [2]string{"GET", "OPTIONS"}
-	response, err := json.Marshal(m)
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write(response)
-}
+var port int
 
 func init() {
-	debug := flag.Bool("debug", false, "Run the API in debug mode")
-	verbose := flag.Bool("v", false, "Run the API in verbose mode")
-	port = flag.Int("port", 8000, "Specify which port the API will run on")
+	var debug, verbose bool
+	flag.BoolVar(&debug, "debug", false, "Run the API in debug mode")
+	flag.BoolVar(&debug, "d", false, "Run the API in debug mode")
+	flag.BoolVar(&verbose, "verbose", false, "Run the API in verbose mode")
+	flag.BoolVar(&verbose, "v", false, "Run the API in verbose mode")
+	flag.IntVar(&port, "port", 8000, "Specify which port the API will run on")
 	flag.Parse()
 
-	if *debug {
+	if debug {
 		logger.Warn("Starting API in debug mode!")
-	} else if *verbose {
+	} else if verbose {
 		logger.Warn("Starting API in verbose mode!")
 	}
 
-	if *debug || *verbose {
+	if debug || verbose {
 		logger.Level = log.DebugLevel
 	}
 
-	govalidator.SetFieldsRequiredByDefault(true)
 }
 
 func main() {
-	router := mux.New()
-	api := router.NewGroup("/api/v1")
-	root := router.UsingContext()
 
-	logger.WithField("port", *port).Info("Starting API server!")
-
-	root.GET("/:test", HomeHandler)
-	root.OPTIONS("/", HomeOptions)
-	api.GET("/:token/command", command.Handler)
-	api.PATCH("/:token/command/:commandName", command.PatchHandler)
-	api.GET("/:token/quote", quotes.Handler)
-	log.Fatal(http.ListenAndServe(":8000", router))
 }

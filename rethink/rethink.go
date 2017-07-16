@@ -37,6 +37,18 @@ func (c *Connection) Close() error {
 	return nil
 }
 
+// Filter returns a single object based on the filter provided
+func (c *Connection) Filter(filter map[string]interface{}) (interface{}, error) {
+	res, err := rethink.Table(c.Table).Filter(filter).Run(c.Session)
+	if err != nil {
+		return nil, err
+	}
+	var response interface{}
+	res.One(&response)
+
+	return response, nil
+}
+
 // GetSingle returns a single object from the current table via a filter key
 func (c *Connection) GetSingle(field string, value interface{}) (interface{}, error) {
 	filter := make(map[string]interface{})
