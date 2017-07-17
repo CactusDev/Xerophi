@@ -6,7 +6,7 @@ import (
 	"os"
 	"path"
 
-	rethink "github.com/GoRethink/gorethink"
+	"github.com/CactusDev/Xerophi/rethink"
 )
 
 // Config keeps track of the config set in config.json
@@ -16,8 +16,8 @@ type Config struct {
 }
 
 type rethinkCfg struct {
-	Connection rethink.ConnectOpts `json:"connection"`
-	DB         string              `json:"db"`
+	Connection rethink.ConnectionOpts `json:"connection"`
+	DB         string                 `json:"db"`
 }
 
 type sentryCfg struct {

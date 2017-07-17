@@ -1,13 +1,21 @@
 package command
 
 import (
+	"net/http"
+
 	"github.com/CactusDev/Xerophi/rethink"
+
 	"github.com/gin-gonic/gin"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 // Command is the struct that implements the handler interface for the command resource
 type Command struct {
-	Conn *rethink.Connection
+	Conn           *rethink.Connection // The RethinkDB connection
+	Table          string              // The database table we're using
+	CreationSchema struct{}            // The schema that the incoming JSON will be decoded into
+	ResponseSchema struct{}            // The schema that will sent in response
 }
 
 // Update handles the updating of a record
@@ -15,7 +23,13 @@ func (c *Command) Update(ctx *gin.Context) {}
 
 // GetAll returns all records associated with the token
 func (c *Command) GetAll(ctx *gin.Context) {
-
+	resp, err := c.Conn.GetAll(c.Table)
+	if err != nil {
+		log.Error(err.Error())
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"data": resp,
+	})
 }
 
 // GetSingle returns a single record

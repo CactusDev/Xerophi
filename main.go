@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/CactusDev/Xerophi/command"
+	"github.com/CactusDev/Xerophi/rethink"
+	"github.com/CactusDev/Xerophi/types"
+
 	"github.com/gin-gonic/gin"
 
 	log "github.com/Sirupsen/logrus"
@@ -12,6 +16,7 @@ import (
 
 var logger = log.New()
 var port int
+var config Config
 
 func init() {
 	var debug, verbose bool
@@ -32,15 +37,36 @@ func init() {
 		logger.Level = log.DebugLevel
 	}
 
+	// Load the config
+	config = LoadConfig()
+}
+
+func generateRoutes(h types.Handler, g *gin.RouterGroup) {
+	g.GET("/", h.GetAll)
+	g.PATCH("/:id", h.Update)
+	g.GET("/:id", h.GetSingle)
+	g.DELETE("/:id", h.Create)
 }
 
 func main() {
-	router := gin.Default()
+	rdbConn := rethink.Connection{
+		DB:   config.Rethink.DB,
+		Opts: config.Rethink.Connection,
+	}
 
+	handlers := map[string]types.Handler{
+		"/command": &command.Command{
+			Conn:  &rdbConn,
+			Table: "commands",
+		},
+	}
+
+	router := gin.Default()
 	api := router.Group("/api/v1")
-	commands := api.Group("/command")
-	for handler := range command.Handlers{
-		if 
+
+	for baseRoute, handler := range handlers {
+		group := api.Group(baseRoute)
+		generateRoutes(handler, group)
 	}
 
 	router.Run()

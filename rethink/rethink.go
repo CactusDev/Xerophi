@@ -1,23 +1,43 @@
 package rethink
 
-import rethink "gopkg.in/gorethink/gorethink.v3"
+import r "gopkg.in/gorethink/gorethink.v3"
 
-// Connection defines a connection to a RethinkDB table within a database
+// ConnectionOpts is what we need to connect to a RethinkDB server
+type ConnectionOpts struct {
+	Host     string `json:"host"`
+	User     string `json:"user"`
+	Password string `json:"password"`
+}
+
+// Connection defines a connection to a RethinkDB instance
 type Connection struct {
-	DB      string
-	Table   string
-	URL     string
-	Session *rethink.Session
+	DB      string         // The Rethink DB to use
+	Opts    ConnectionOpts // Connection options for connecting to the Rethink server
+	Session *r.Session     // The connected session
+}
+
+// Database is a set of methods that must be implemented for an object to implement the Database interface
+// Makes it easier if we change databases in the future
+type Database interface {
+	Connect() error
+	Close() error
+	GetSingle(table string) (interface{}, error)
+	GetMultiple(table string, limit int) ([]interface{}, error)
+	GetAll(table string) ([]interface{}, error)
+	GetByUUID(uuid string, table string) (interface{}, error)
+	GetByFilter(table string, filter map[string]interface{}, limit int) ([]interface{}, error)
+	Monitor(table string) (*r.Cursor, error)
+	FilteredMonitor(table string, filter map[string]interface{}) (*r.Cursor, error)
 }
 
 // Connect connects you to Rethink
 func (c *Connection) Connect() error {
-	connArgs := rethink.ConnectOpts{
-		Address:  c.URL,
+	session, err := r.Connect(r.ConnectOpts{
+		Address:  c.Opts.Host,
 		Database: c.DB,
-	}
-
-	session, err := rethink.Connect(connArgs)
+		Username: c.Opts.User,
+		Password: c.Opts.Password,
+	})
 	if err != nil {
 		return err
 	}
@@ -35,56 +55,4 @@ func (c *Connection) Close() error {
 	c.Session = nil
 
 	return nil
-}
-
-// Filter returns a single object based on the filter provided
-func (c *Connection) Filter(filter map[string]interface{}) (interface{}, error) {
-	res, err := rethink.Table(c.Table).Filter(filter).Run(c.Session)
-	if err != nil {
-		return nil, err
-	}
-	var response interface{}
-	res.One(&response)
-
-	return response, nil
-}
-
-// GetSingle returns a single object from the current table via a filter key
-func (c *Connection) GetSingle(field string, value interface{}) (interface{}, error) {
-	filter := make(map[string]interface{})
-	filter[field] = value
-
-	res, err := rethink.Table(c.Table).Filter(filter).Run(c.Session)
-	if err != nil {
-		return nil, err
-	}
-	var response interface{}
-	res.One(&response)
-
-	return response, nil
-}
-
-// GetByUUID returns a single object from the current table via the GetByUUID
-func (c *Connection) GetByUUID(uuid string) (interface{}, error) {
-	res, err := rethink.Table(c.Table).Get(uuid).Run(c.Session)
-	defer res.Close()
-	if err != nil {
-		return nil, err
-	}
-	var response interface{}
-	res.One(&response)
-
-	return response, nil
-}
-
-// GetTable returns all the rescords in a table
-func (c *Connection) GetTable() ([]interface{}, error) {
-	res, err := rethink.Table(c.Table).Run(c.Session)
-	defer res.Close()
-	if err != nil {
-		return nil, err
-	}
-	var response []interface{}
-	res.All(&response)
-	return response, nil
 }
