@@ -56,6 +56,7 @@ func main() {
 		DB:   config.Rethink.DB,
 		Opts: config.Rethink.Connection,
 	}
+	rdbConn.Connect()
 
 	handlers := map[string]types.Handler{
 		"/command": &command.Command{

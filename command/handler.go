@@ -23,10 +23,12 @@ func (c *Command) Update(ctx *gin.Context) {}
 
 // GetAll returns all records associated with the token
 func (c *Command) GetAll(ctx *gin.Context) {
+	log.Debug("Ohai")
 	resp, err := c.Conn.GetAll(c.Table)
 	if err != nil {
 		log.Error(err.Error())
 	}
+	log.Debug("getall")
 	ctx.JSON(http.StatusOK, gin.H{
 		"data": resp,
 	})
