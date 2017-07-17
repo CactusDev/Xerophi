@@ -13,6 +13,7 @@ import (
 type Config struct {
 	Rethink rethinkCfg `json:"rethink"`
 	Sentry  sentryCfg  `json:"sentry"`
+	Server  serverCfg  `json:"server"`
 }
 
 type rethinkCfg struct {
@@ -23,6 +24,10 @@ type rethinkCfg struct {
 type sentryCfg struct {
 	DSN     string `json:"dsn"`
 	Enabled bool   `json:"enabled"`
+}
+
+type serverCfg struct {
+	Port int
 }
 
 // LoadConfig tries to load the config from the default path "./config.json"

@@ -29,8 +29,11 @@ func init() {
 
 	if debug {
 		logger.Warn("Starting API in debug mode!")
+		gin.SetMode(gin.DebugMode)
 	} else if verbose {
 		logger.Warn("Starting API in verbose mode!")
+	} else {
+		gin.SetMode(gin.ReleaseMode)
 	}
 
 	if debug || verbose {
@@ -69,7 +72,7 @@ func main() {
 		generateRoutes(handler, group)
 	}
 
-	router.Run()
+	router.Run(fmt.Sprintf(":%d", config.Server.Port))
 
 	logger.Warnf("API starting on :%d - %s", port, router.BasePath)
 	logger.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
