@@ -2,6 +2,10 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -31,5 +35,16 @@ func init() {
 }
 
 func main() {
+	router := gin.Default()
 
+	api := router.Group("/api/v1")
+	commands := api.Group("/command")
+	for handler := range command.Handlers{
+		if 
+	}
+
+	router.Run()
+
+	logger.Warnf("API starting on :%d - %s", port, router.BasePath)
+	logger.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
