@@ -24,10 +24,12 @@ type Database interface {
 	GetSingle(table string) (interface{}, error)
 	GetMultiple(table string, limit int) ([]interface{}, error)
 	GetAll(table string) ([]interface{}, error)
-	GetByUUID(uuid string, table string) (interface{}, error)
+	GetByUUID(table string, uid string) (interface{}, error)
 	GetByFilter(table string, filter map[string]interface{}, limit int) ([]interface{}, error)
-	Monitor(table string) (*r.Cursor, error)
-	FilteredMonitor(table string, filter map[string]interface{}) (*r.Cursor, error)
+	Update(table string, uid string, data map[string]interface{}) (interface{}, error)
+	Create(table string, data map[string]interface{}) (interface{}, error)
+	Delete(table string, uid string) (interface{}, error)
+	Exists(table string, filter map[string]interface{}) (interface{}, error)
 }
 
 // Connect connects you to Rethink

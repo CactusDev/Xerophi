@@ -45,10 +45,10 @@ func init() {
 }
 
 func generateRoutes(h types.Handler, g *gin.RouterGroup) {
-	g.GET("/", h.GetAll)
-	g.PATCH("/:id", h.Update)
-	g.GET("/:id", h.GetSingle)
-	g.DELETE("/:id", h.Create)
+	g.GET("", h.GetAll)
+	g.PATCH("/:name", h.Update)
+	g.GET("/:name", h.GetSingle)
+	g.DELETE("/:name", h.Create)
 }
 
 func main() {
@@ -59,7 +59,7 @@ func main() {
 	rdbConn.Connect()
 
 	handlers := map[string]types.Handler{
-		"/command": &command.Command{
+		"/:token/command": &command.Command{
 			Conn:  &rdbConn,
 			Table: "commands",
 		},
