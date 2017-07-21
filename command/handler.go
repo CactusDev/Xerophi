@@ -4,10 +4,12 @@ import (
 	"net/http"
 
 	"github.com/CactusDev/Xerophi/rethink"
+	"github.com/CactusDev/Xerophi/util"
 
 	"github.com/gin-gonic/gin"
 
 	log "github.com/Sirupsen/logrus"
+	mapstruct "github.com/mitchellh/mapstructure"
 )
 
 // Command is the struct that implements the handler interface for the command resource
@@ -22,7 +24,6 @@ type Command struct {
 func (c *Command) Update(ctx *gin.Context) {
 	filter := map[string]interface{}{"token": ctx.Param("token"), "name": ctx.Param("name")}
 	resp, err := c.Conn.GetByFilter(c.Table, filter, 1)
-	log.Debug(resp)
 	if err != nil {
 		log.Error(err.Error())
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -60,7 +61,12 @@ func (c *Command) GetSingle(ctx *gin.Context) {
 	if resp == nil {
 		resp = make([]interface{}, 0)
 	}
-	ctx.JSON(http.StatusOK, gin.H{"data": resp})
+	var response ResponseSchema
+	err = mapstruct.Decode(resp, &response)
+	if err != nil {
+		log.Error(err.Error())
+	}
+	ctx.JSON(http.StatusOK, gin.H{"data": util.MarshalResponse(response)})
 }
 
 // Create creates a new record
@@ -72,7 +78,7 @@ func (c *Command) Create(ctx *gin.Context) {
 		log.Error(err.Error())
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 	}
-	ctx.JSON(http.StatusCreated, gin.H{"data": resp})
+	ctx.JSON(http.StatusCreated, resp)
 }
 
 // Delete removes a record
