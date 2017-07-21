@@ -22,8 +22,15 @@ func convertType(val reflect.Value) (interface{}, error) {
 	case reflect.Bool:
 		return val.Bool(), nil
 	case reflect.Struct:
-		// Ugh, how we finna deal with this?
-		return val, errors.New("Struct, can't parse")
+		var fill = make(map[string]interface{})
+		for i := 0; i < val.NumField(); i++ {
+			conv, err := convertType(val.Field(i))
+			if err != nil {
+				log.Error(err.Error())
+			}
+			fill[val.Type().Field(i).Name] = conv
+		}
+		return fill, nil
 	}
 
 	// Didn't match anything, just return an empty string :/
@@ -42,12 +49,13 @@ func MarshalResponse(s JSONAPISchema) map[string]interface{} {
 	val := reflect.ValueOf(s)
 
 	for i := 0; i < typ.NumField(); i++ {
+		fieldName := typ.Field(i).Name
 		if typ.Field(i).Anonymous {
 			// Anonymous field, don't try to access
 			continue
 		}
 		// Get the jsonapi tags for this element
-		tags := s.GetAPITag(typ.Field(i).Name)
+		tags := s.GetAPITag(fieldName)
 		// Split the tags on the , character
 		split := strings.Split(tags, ",")
 
