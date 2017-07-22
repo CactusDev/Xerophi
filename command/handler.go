@@ -7,9 +7,6 @@ import (
 	"github.com/CactusDev/Xerophi/util"
 
 	"github.com/gin-gonic/gin"
-
-	log "github.com/Sirupsen/logrus"
-	mapstruct "github.com/mitchellh/mapstructure"
 )
 
 // Command is the struct that implements the handler interface for the command resource
@@ -25,60 +22,60 @@ func (c *Command) Update(ctx *gin.Context) {
 	filter := map[string]interface{}{"token": ctx.Param("token"), "name": ctx.Param("name")}
 	resp, err := c.Conn.GetByFilter(c.Table, filter, 1)
 	if err != nil {
-		log.Error(err.Error())
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		util.NiceError(ctx, err, http.StatusBadRequest)
 	}
 	if resp == nil {
 		// Command doesn't exist, pass control to c.Create
 		c.Create(ctx)
 	}
 	// Command exists, update it
-	ctx.Data(http.StatusTeapot, "text", []byte("Ohai"))
+	// ctx.JSON(http.StatusOK, gin.H{"data"})
 }
 
 // GetAll returns all records associated with the token
 func (c *Command) GetAll(ctx *gin.Context) {
 	filter := map[string]interface{}{"token": ctx.Param("token")}
-	resp, err := c.Conn.GetByFilter(c.Table, filter, 0)
+	record, err := c.Conn.GetByFilter(c.Table, filter, 0)
 	if err != nil {
-		log.Error(err.Error())
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		util.NiceError(ctx, err, http.StatusBadRequest)
+		return
 	}
-	if resp == nil {
-		resp = make([]interface{}, 0)
+	if record == nil {
+		record = make([]interface{}, 0)
 	}
-	ctx.JSON(http.StatusOK, gin.H{"data": resp})
+
+	util.NiceResponse(ctx, ResponseSchema{}, record)
 }
 
 // GetSingle returns a single record
 func (c *Command) GetSingle(ctx *gin.Context) {
 	filter := map[string]interface{}{"token": ctx.Param("token"), "name": ctx.Param("name")}
-	resp, err := c.Conn.GetSingle(filter, c.Table)
+	record, err := c.Conn.GetSingle(filter, c.Table)
 	if err != nil {
-		log.Error(err.Error())
-		ctx.AbortWithError(http.StatusBadRequest, err)
+		util.NiceError(ctx, err, http.StatusBadRequest)
+		return
 	}
-	if resp == nil {
-		resp = make([]interface{}, 0)
+	if record == nil {
+		record = make([]interface{}, 0)
 	}
-	var response ResponseSchema
-	err = mapstruct.Decode(resp, &response)
-	if err != nil {
-		log.Error(err.Error())
-	}
-	ctx.JSON(http.StatusOK, gin.H{"data": util.MarshalResponse(response)})
+
+	util.NiceResponse(ctx, ResponseSchema{}, record)
 }
 
 // Create creates a new record
 func (c *Command) Create(ctx *gin.Context) {
 	var vals map[string]interface{}
 	ctx.BindJSON(&vals)
-	resp, err := c.Conn.Create(c.Table, vals) // data)
+	vals["token"] = ctx.Param("token")
+	vals["name"] = ctx.Param("name")
+
+	record, err := c.Conn.Create(c.Table, vals)
 	if err != nil {
-		log.Error(err.Error())
-		ctx.AbortWithError(http.StatusInternalServerError, err)
+		util.NiceError(ctx, err, http.StatusBadRequest)
+		return
 	}
-	ctx.JSON(http.StatusCreated, resp)
+
+	util.NiceResponse(ctx, ResponseSchema{}, record)
 }
 
 // Delete removes a record
