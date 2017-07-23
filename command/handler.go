@@ -7,6 +7,8 @@ import (
 	"github.com/CactusDev/Xerophi/util"
 
 	"github.com/gin-gonic/gin"
+
+	mapstruct "github.com/mitchellh/mapstructure"
 )
 
 // Command is the struct that implements the handler interface for the command resource
@@ -43,8 +45,6 @@ func (c *Command) GetAll(ctx *gin.Context) {
 	if record == nil {
 		record = make([]interface{}, 0)
 	}
-
-	util.NiceResponse(ctx, ResponseSchema{}, record)
 }
 
 // GetSingle returns a single record
@@ -58,8 +58,10 @@ func (c *Command) GetSingle(ctx *gin.Context) {
 	if record == nil {
 		record = make([]interface{}, 0)
 	}
+	var response ResponseSchema
+	mapstruct.Decode(response, record)
 
-	util.NiceResponse(ctx, ResponseSchema{}, record)
+	ctx.JSON(http.StatusOK, util.MarshalResponse(response))
 }
 
 // Create creates a new record
@@ -75,7 +77,7 @@ func (c *Command) Create(ctx *gin.Context) {
 		return
 	}
 
-	util.NiceResponse(ctx, ResponseSchema{}, record)
+	ctx.JSON(200, record)
 }
 
 // Delete removes a record

@@ -1,6 +1,11 @@
 package command
 
-import "github.com/CactusDev/Xerophi/schemas"
+import (
+	"fmt"
+
+	"github.com/CactusDev/Xerophi/schemas"
+	"github.com/CactusDev/Xerophi/util"
+)
 
 // ResponseSchema is the schema for the data that will be sent out to the client
 type ResponseSchema struct {
@@ -20,8 +25,22 @@ type ClientSchema struct{}
 // EmbeddedResponseSchema is the schema that is stored under the response key in ResponseSchema
 type EmbeddedResponseSchema struct {
 	Action  bool                    `json:"action" jsonapi:"action"`
-	Message []schemas.MessagePacket `json:"message"`
-	Role    int                     `json:"role"`
-	Target  string                  `json:"target"`
-	User    string                  `json:"user"`
+	Message []schemas.MessagePacket `json:"message" jsonapi:"message"`
+	Role    int                     `json:"role" jsonapi:"role"`
+	Target  string                  `json:"target" jsonapi:"target"`
+	User    string                  `json:"user" jsonapi:"user"`
+}
+
+// GetAPITag allows each of these types to implement the JSONAPISchema interface
+func (r ResponseSchema) GetAPITag(lookup string) string {
+	tags := util.ReturnTags(r, "jsonapi")
+	fmt.Printf("[%s] %v\n", lookup, tags[lookup])
+	return tags[lookup].(string)
+}
+
+// GetAPITag allows each of these types to implement the JSONAPISchema interface
+func (r EmbeddedResponseSchema) GetAPITag(lookup string) string {
+	tags := util.ReturnTags(r, "jsonapi")
+	fmt.Printf("[%s] %v", lookup, tags[lookup])
+	return tags[lookup].(string)
 }
