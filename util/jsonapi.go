@@ -11,6 +11,8 @@ type JSONAPISchema interface {
 }
 
 // MarshalResponse takes an object that implements the JSONAPISchema interface and marshals it to a map[string]interface{}
+// Sub-structs will be placed automatically under their parent (meta/attr) so there is no need to have that tag on
+// any sub-struct
 func MarshalResponse(s JSONAPISchema) map[string]interface{} {
 	var response = make(map[string]interface{})
 	var data = make(map[string]interface{})
@@ -36,7 +38,7 @@ func MarshalResponse(s JSONAPISchema) map[string]interface{} {
 		for _, tag := range split[1:] {
 			value := ifv.Field(i).Interface()
 			switch tag {
-			case "attributes":
+			case "attr":
 				// Attribute
 				attributes[split[0]] = value
 			case "meta":
@@ -44,7 +46,7 @@ func MarshalResponse(s JSONAPISchema) map[string]interface{} {
 				meta[split[0]] = value
 			case "primary":
 				// It's the primary key/record ID
-				response["id"] = ifv.Field(i).String()
+				attributes["id"] = ifv.Field(i).String()
 			default: // Ignore any other tags
 			}
 		}
@@ -59,6 +61,27 @@ func MarshalResponse(s JSONAPISchema) map[string]interface{} {
 	}
 
 	return response
+}
+
+// FieldTag looks up a single field in the provided object and returns the tag for it
+func FieldTag(obj interface{}, lookup string, tag string) string {
+	ift := reflect.TypeOf(obj)
+
+	// Our code only works with structs
+	if ift.Kind() != reflect.Struct {
+		return ""
+	}
+
+	field, ok := ift.FieldByName(lookup)
+	if !ok {
+		return ""
+	}
+	resp, ok := field.Tag.Lookup(tag)
+	if !ok {
+		return ""
+	}
+
+	return resp
 }
 
 // ReturnTags takes an interface and a string to look up the tag for.

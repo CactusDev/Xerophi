@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	log "github.com/Sirupsen/logrus"
 	mapstruct "github.com/mitchellh/mapstructure"
 )
 
@@ -50,16 +51,21 @@ func (c *Command) GetAll(ctx *gin.Context) {
 // GetSingle returns a single record
 func (c *Command) GetSingle(ctx *gin.Context) {
 	filter := map[string]interface{}{"token": ctx.Param("token"), "name": ctx.Param("name")}
-	record, err := c.Conn.GetSingle(filter, c.Table)
+	fromDB, err := c.Conn.GetSingle(filter, c.Table)
 	if err != nil {
 		util.NiceError(ctx, err, http.StatusBadRequest)
 		return
 	}
-	if record == nil {
-		record = make([]interface{}, 0)
+	if fromDB == nil {
+		ctx.JSON(http.StatusNotFound, gin.H{})
+		return
 	}
+
 	var response ResponseSchema
-	mapstruct.Decode(response, record)
+	if err = mapstruct.Decode(fromDB, &response); err != nil {
+		util.NiceError(ctx, err, http.StatusInternalServerError)
+		return
+	}
 
 	ctx.JSON(http.StatusOK, util.MarshalResponse(response))
 }
