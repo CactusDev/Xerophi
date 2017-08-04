@@ -22,11 +22,11 @@ type ClientSchema struct{}
 
 // EmbeddedResponseSchema is the schema that is stored under the response key in ResponseSchema
 type EmbeddedResponseSchema struct {
-	Action  bool                    `jsonapi:"action"`
-	Message []schemas.MessagePacket `jsonapi:"message"`
-	Role    int                     `jsonapi:"role"`
-	Target  string                  `jsonapi:"target"`
-	User    string                  `jsonapi:"user"`
+	Action  bool                    `jsonapi:"action,attr"`
+	Message []schemas.MessagePacket `jsonapi:"message,attr"`
+	Role    int                     `jsonapi:"role,attr"`
+	Target  string                  `jsonapi:"target,attr"`
+	User    string                  `jsonapi:"user,attr"`
 }
 
 // GetAPITag allows each of these types to implement the JSONAPISchema interface

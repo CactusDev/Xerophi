@@ -37,6 +37,7 @@ func MarshalResponse(s JSONAPISchema) map[string]interface{} {
 		// Anything after the first element is tags, figure out which we want
 		for _, tag := range split[1:] {
 			value := ifv.Field(i).Interface()
+			// Need to set the keys w/ their names here if it's a struct
 			switch tag {
 			case "attr":
 				// Attribute
@@ -72,6 +73,7 @@ func FieldTag(obj interface{}, lookup string, tag string) string {
 		return ""
 	}
 
+	// TODO: If it's a struct, then we need to iterate into it and get the tags for it
 	field, ok := ift.FieldByName(lookup)
 	if !ok {
 		return ""

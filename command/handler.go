@@ -38,14 +38,28 @@ func (c *Command) Update(ctx *gin.Context) {
 // GetAll returns all records associated with the token
 func (c *Command) GetAll(ctx *gin.Context) {
 	filter := map[string]interface{}{"token": ctx.Param("token")}
-	record, err := c.Conn.GetByFilter(c.Table, filter, 0)
+	fromDB, err := c.Conn.GetByFilter(c.Table, filter, 0)
 	if err != nil {
 		util.NiceError(ctx, err, http.StatusBadRequest)
 		return
 	}
-	if record == nil {
-		record = make([]interface{}, 0)
+	if fromDB == nil {
+		ctx.JSON(http.StatusNotFound, make([]struct{}, 0))
+		return
 	}
+
+	var respDecode ResponseSchema
+	response := make([]map[string]interface{}, len(fromDB))
+	for pos, record := range fromDB {
+		// If there's an issue decoding it, just log it and move on to the next record
+		if err := mapstruct.Decode(record, &respDecode); err != nil {
+			log.Error(err.Error())
+			continue
+		}
+		response[pos] = util.MarshalResponse(respDecode)
+	}
+
+	ctx.JSON(http.StatusOK, response)
 }
 
 // GetSingle returns a single record
