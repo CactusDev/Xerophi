@@ -1,0 +1,17 @@
+{
+    "rethink": {
+        "connection": {
+            "host": "localhost",
+            "username": "admin",
+            "password": "adminpasswordstuffs"
+        },
+        "db": "api"
+    },
+    "sentry": {
+        "dsn": "https://supersecretdsn.com/key",
+        "enabled": false
+    },
+    "server": {
+        "port": 8000
+    }
+}
