@@ -14,7 +14,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-var logger = log.New()
 var port int
 var config Config
 
@@ -28,16 +27,16 @@ func init() {
 	flag.Parse()
 
 	if debug {
-		logger.Warn("Starting API in debug mode!")
+		log.Warn("Starting API in debug mode!")
 		gin.SetMode(gin.DebugMode)
 	} else if verbose {
-		logger.Warn("Starting API in verbose mode!")
+		log.Warn("Starting API in verbose mode!")
 	} else {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
 	if debug || verbose {
-		logger.Level = log.DebugLevel
+		log.SetLevel(log.DebugLevel)
 	}
 
 	// Load the config
@@ -59,7 +58,7 @@ func main() {
 	rdbConn.Connect()
 
 	handlers := map[string]types.Handler{
-		"/:token/command": &command.Command{
+		"/user/:token/command": &command.Command{
 			Conn:  &rdbConn,
 			Table: "commands",
 		},
@@ -75,6 +74,6 @@ func main() {
 
 	router.Run(fmt.Sprintf(":%d", config.Server.Port))
 
-	logger.Warnf("API starting on :%d - %s", port, router.BasePath)
-	logger.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
+	log.Warnf("API starting on :%d - %s", port, router.BasePath)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }

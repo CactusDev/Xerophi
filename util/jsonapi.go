@@ -3,6 +3,8 @@ package util
 import (
 	"reflect"
 	"strings"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 // JSONAPISchema is an interface used for generating the proper JSON API response packet
@@ -24,19 +26,14 @@ func MarshalResponse(s JSONAPISchema) map[string]interface{} {
 	ifv := reflect.ValueOf(s)
 
 	for i := 0; i < ift.NumField(); i++ {
-		fieldName := ift.Field(i).Name
-		if ift.Field(i).Anonymous {
-			// Anonymous field, don't try to access
+		split := GetTags(ift.Field(i), s)
+		if split == nil {
+			// It's an anonymous field, ignore it
 			continue
 		}
-		// Get the jsonapi tags for this element
-		tags := s.GetAPITag(fieldName)
-		// Split the tags on the , character
-		split := strings.Split(tags, ",")
-
+		value := ifv.Field(i).Interface()
 		// Anything after the first element is tags, figure out which we want
 		for _, tag := range split[1:] {
-			value := ifv.Field(i).Interface()
 			// Need to set the keys w/ their names here if it's a struct
 			switch tag {
 			case "attr":
@@ -64,6 +61,26 @@ func MarshalResponse(s JSONAPISchema) map[string]interface{} {
 	return response
 }
 
+// GetTags takes a reflect.StructField object and returns the appropriate jsonapi tagged field name,
+// and a slice of the associated tags
+func GetTags(obj reflect.StructField, s JSONAPISchema) []string {
+	fieldName := obj.Name
+	if obj.Anonymous {
+		// Anonymous field, don't try to access
+		return nil
+	}
+	if obj.Type.Kind() == reflect.Struct {
+
+	}
+	// Get the jsonapi tags for this element
+	tags := s.GetAPITag(fieldName)
+	// Split the tags on the , character
+	split := strings.Split(tags, ",")
+	log.Debugf("[%s]\t%s", fieldName, split)
+
+	return split
+}
+
 // FieldTag looks up a single field in the provided object and returns the tag for it
 func FieldTag(obj interface{}, lookup string, tag string) string {
 	ift := reflect.TypeOf(obj)
@@ -77,6 +94,9 @@ func FieldTag(obj interface{}, lookup string, tag string) string {
 	field, ok := ift.FieldByName(lookup)
 	if !ok {
 		return ""
+	}
+	if field.Type.Kind() == reflect.Struct {
+
 	}
 	resp, ok := field.Tag.Lookup(tag)
 	if !ok {
