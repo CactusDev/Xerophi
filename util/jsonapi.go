@@ -25,30 +25,7 @@ func MarshalResponse(s JSONAPISchema) map[string]interface{} {
 	ift := reflect.TypeOf(s)
 	ifv := reflect.ValueOf(s)
 
-	for i := 0; i < ift.NumField(); i++ {
-		split := GetTags(ift.Field(i), s)
-		if split == nil {
-			// It's an anonymous field, ignore it
-			continue
-		}
-		value := ifv.Field(i).Interface()
-		// Anything after the first element is tags, figure out which we want
-		for _, tag := range split[1:] {
-			// Need to set the keys w/ their names here if it's a struct
-			switch tag {
-			case "attr":
-				// Attribute
-				attributes[split[0]] = value
-			case "meta":
-				// Meta information about the request
-				meta[split[0]] = value
-			case "primary":
-				// It's the primary key/record ID
-				attributes["id"] = ifv.Field(i).String()
-			default: // Ignore any other tags
-			}
-		}
-	}
+	attributes, meta = pullVals(ift, ifv)
 
 	data["attributes"] = attributes
 	response["data"] = data
@@ -61,22 +38,53 @@ func MarshalResponse(s JSONAPISchema) map[string]interface{} {
 	return response
 }
 
-// GetTags takes a reflect.StructField object and returns the appropriate jsonapi tagged field name,
-// and a slice of the associated tags
-func GetTags(obj reflect.StructField, s JSONAPISchema) []string {
-	fieldName := obj.Name
+func pullVals(ift reflect.Type, ifv reflect.Value) (map[string]interface{}, map[string]interface{}) {
+	var attr = make(map[string]interface{})
+	var meta = make(map[string]interface{})
+	for i := 0; i < ift.NumField(); i++ {
+		var value interface{}
+		split := GetTags(ift.Field(i))
+		if split == nil {
+			// It's an anonymous field, ignore it
+			continue
+		}
+		value = ifv.Field(i).Interface()
+		if ifv.Field(i).Kind() == reflect.Struct {
+			value, _ = pullVals(ift.Field(i).Type, ifv.Field(i))
+		} else {
+			// Anything after the first element is tags, figure out which we want
+			for _, tag := range split[1:] {
+				// Need to set the keys w/ their names here if it's a struct
+				switch tag {
+				case "attr":
+					// Attribute
+					attr[split[0]] = value
+				case "meta":
+					// Meta information about the request
+					meta[split[0]] = value
+				case "primary":
+					// It's the primary key/record ID
+					attr["id"] = ifv.Field(i).String()
+				default: // Ignore any other tags
+				}
+			}
+		}
+		log.Warn("Ohai:\t", attr)
+	}
+
+	return attr, meta
+}
+
+// GetTags takes a reflect.StructField object and returns a slice of the associated tags
+func GetTags(obj reflect.StructField) []string {
 	if obj.Anonymous {
 		// Anonymous field, don't try to access
 		return nil
 	}
-	if obj.Type.Kind() == reflect.Struct {
-
-	}
 	// Get the jsonapi tags for this element
-	tags := s.GetAPITag(fieldName)
+	tags := obj.Tag.Get("jsonapi")
 	// Split the tags on the , character
 	split := strings.Split(tags, ",")
-	log.Debugf("[%s]\t%s", fieldName, split)
 
 	return split
 }
@@ -90,7 +98,6 @@ func FieldTag(obj interface{}, lookup string, tag string) string {
 		return ""
 	}
 
-	// TODO: If it's a struct, then we need to iterate into it and get the tags for it
 	field, ok := ift.FieldByName(lookup)
 	if !ok {
 		return ""
