@@ -50,14 +50,16 @@ func (c *Command) GetAll(ctx *gin.Context) {
 
 	var respDecode ResponseSchema
 	response := make([]map[string]interface{}, len(fromDB))
+	var decoded []ResponseSchema
 	for pos, record := range fromDB {
 		// If there's an issue decoding it, just log it and move on to the next record
 		if err := mapstruct.Decode(record, &respDecode); err != nil {
 			log.Error(err.Error())
 			continue
 		}
-		response[pos] = util.MarshalResponse(respDecode)
+		decoded[pos] = respDecode
 	}
+	foo := util.MarshalResponse(decoded...)
 
 	ctx.JSON(http.StatusOK, response)
 }

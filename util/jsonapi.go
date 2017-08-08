@@ -3,8 +3,6 @@ package util
 import (
 	"reflect"
 	"strings"
-
-	log "github.com/Sirupsen/logrus"
 )
 
 // JSONAPISchema is an interface used for generating the proper JSON API response packet
@@ -15,32 +13,51 @@ type JSONAPISchema interface {
 // MarshalResponse takes an object that implements the JSONAPISchema interface and marshals it to a map[string]interface{}
 // Sub-structs will be placed automatically under their parent (meta/attr) so there is no need to have that tag on
 // any sub-struct
-func MarshalResponse(s JSONAPISchema) map[string]interface{} {
+func MarshalResponse(s ...JSONAPISchema) map[string]interface{} {
 	var response = make(map[string]interface{})
-	var data = make(map[string]interface{})
-	// Create attributes & meta maps before adding to main response map
-	var attributes = make(map[string]interface{})
-	var meta = make(map[string]interface{})
 
-	ift := reflect.TypeOf(s)
-	ifv := reflect.ValueOf(s)
+	if len(s) == 1 {
+		// Single record
+		var data = make(map[string]interface{})
+		ift := reflect.TypeOf(s[0])
+		ifv := reflect.ValueOf(s[0])
+		attributes, meta, id := pullVals(ift, ifv)
 
-	attributes, meta = pullVals(ift, ifv)
+		data["attributes"] = attributes
+		data["id"] = id
+		if len(meta) > 0 {
+			data["meta"] = meta
+		}
 
-	data["attributes"] = attributes
-	response["data"] = data
+		response["data"] = data
 
-	// Only add it if there's anything *to* add
-	if len(meta) != 0 {
-		response["meta"] = meta
+	} else if len(s) > 1 {
+		var multiData = make([]map[string]interface{}, len(s))
+		// Multiple records
+		for pos, record := range s {
+			var data = make(map[string]interface{})
+			ift := reflect.TypeOf(record)
+			ifv := reflect.ValueOf(record)
+			attributes, meta, id := pullVals(ift, ifv)
+
+			data["attributes"] = attributes
+			data["id"] = id
+
+			if len(meta) > 0 {
+				data["meta"] = meta
+			}
+
+			multiData[pos] = data
+		}
 	}
 
 	return response
 }
 
-func pullVals(ift reflect.Type, ifv reflect.Value) (map[string]interface{}, map[string]interface{}) {
+func pullVals(ift reflect.Type, ifv reflect.Value) (map[string]interface{}, map[string]interface{}, string) {
 	var attr = make(map[string]interface{})
 	var meta = make(map[string]interface{})
+	var id = ""
 	for i := 0; i < ift.NumField(); i++ {
 		var value interface{}
 		split := GetTags(ift.Field(i))
@@ -50,29 +67,35 @@ func pullVals(ift reflect.Type, ifv reflect.Value) (map[string]interface{}, map[
 		}
 		value = ifv.Field(i).Interface()
 		if ifv.Field(i).Kind() == reflect.Struct {
-			value, _ = pullVals(ift.Field(i).Type, ifv.Field(i))
-		} else {
-			// Anything after the first element is tags, figure out which we want
-			for _, tag := range split[1:] {
-				// Need to set the keys w/ their names here if it's a struct
-				switch tag {
-				case "attr":
-					// Attribute
-					attr[split[0]] = value
-				case "meta":
-					// Meta information about the request
-					meta[split[0]] = value
-				case "primary":
-					// It's the primary key/record ID
-					attr["id"] = ifv.Field(i).String()
-				default: // Ignore any other tags
-				}
+			var subID = ""
+			var subMeta map[string]interface{}
+			value, subMeta, subID = pullVals(ift.Field(i).Type, ifv.Field(i))
+			if len(subMeta) > 0 {
+				meta[split[0]] = subMeta
+			}
+			if subID != "" && id == "" {
+				id = subID
 			}
 		}
-		log.Warn("Ohai:\t", attr)
+		// Anything after the first element is tags, figure out which we want
+		for _, tag := range split[1:] {
+			// Need to set the keys w/ their names here if it's a struct
+			switch tag {
+			case "attr":
+				// Attribute
+				attr[split[0]] = value
+			case "meta":
+				// Meta information about the request
+				meta[split[0]] = value
+			case "primary":
+				// It's the primary key/record ID
+				id = ifv.Field(i).String()
+			default: // Ignore any other tags
+			}
+		}
 	}
 
-	return attr, meta
+	return attr, meta, id
 }
 
 // GetTags takes a reflect.StructField object and returns a slice of the associated tags
