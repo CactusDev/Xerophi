@@ -59,7 +59,7 @@ func (c *Command) GetAll(ctx *gin.Context) {
 		}
 		decoded[pos] = respDecode
 	}
-	foo := util.MarshalResponse(decoded...)
+	// foo := util.MarshalResponse(decoded...)
 
 	ctx.JSON(http.StatusOK, response)
 }

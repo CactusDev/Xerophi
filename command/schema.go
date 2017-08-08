@@ -10,11 +10,11 @@ type ResponseSchema struct {
 	ID        string                  `jsonapi:"id,primary"`
 	Arguments []schemas.MessagePacket `jsonapi:"arguments,attr"`
 	Count     int                     `jsonapi:"count,attr"`
-	CreatedAt string                  `jsonapi:"createdAt,attr"`
+	CreatedAt string                  `jsonapi:"createdAt,meta"`
 	Enabled   bool                    `jsonapi:"enabled,attr"`
 	Name      string                  `jsonapi:"name,attr"`
 	Response  EmbeddedResponseSchema  `jsonapi:"response,attr"`
-	Token     string                  `jsonapi:"token,attr"`
+	Token     string                  `jsonapi:"token,meta"`
 }
 
 // ClientSchema is the schema the data from the client will be marshalled into
