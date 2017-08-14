@@ -13,43 +13,21 @@ type JSONAPISchema interface {
 // MarshalResponse takes an object that implements the JSONAPISchema interface and marshals it to a map[string]interface{}
 // Sub-structs will be placed automatically under their parent (meta/attr) so there is no need to have that tag on
 // any sub-struct
-func MarshalResponse(s ...JSONAPISchema) map[string]interface{} {
+func MarshalResponse(s JSONAPISchema) map[string]interface{} {
 	var response = make(map[string]interface{})
 
-	if len(s) == 1 {
-		// Single record
-		var data = make(map[string]interface{})
-		ift := reflect.TypeOf(s[0])
-		ifv := reflect.ValueOf(s[0])
-		attributes, meta, id := pullVals(ift, ifv)
+	var data = make(map[string]interface{})
+	ift := reflect.TypeOf(s)
+	ifv := reflect.ValueOf(s)
+	attributes, meta, id := pullVals(ift, ifv)
 
-		data["attributes"] = attributes
-		data["id"] = id
-		if len(meta) > 0 {
-			data["meta"] = meta
-		}
-
-		response["data"] = data
-
-	} else if len(s) > 1 {
-		var multiData = make([]map[string]interface{}, len(s))
-		// Multiple records
-		for pos, record := range s {
-			var data = make(map[string]interface{})
-			ift := reflect.TypeOf(record)
-			ifv := reflect.ValueOf(record)
-			attributes, meta, id := pullVals(ift, ifv)
-
-			data["attributes"] = attributes
-			data["id"] = id
-
-			if len(meta) > 0 {
-				data["meta"] = meta
-			}
-
-			multiData[pos] = data
-		}
+	data["attributes"] = attributes
+	data["id"] = id
+	if len(meta) > 0 {
+		response["meta"] = meta
 	}
+
+	response["data"] = data
 
 	return response
 }

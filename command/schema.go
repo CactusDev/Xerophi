@@ -18,7 +18,17 @@ type ResponseSchema struct {
 }
 
 // ClientSchema is the schema the data from the client will be marshalled into
-type ClientSchema struct{}
+type ClientSchema struct {
+	Arguments []schemas.MessagePacket `json:"arguments" binding:"required"`
+	Enabled   bool                    `json:"enabled" binding:"required"`
+	Response  EmbeddedResponseSchema  `json:"response" binding:"required"`
+	// Ignore these fields in user input, they will be filled automatically by the API
+	ID        string `json:"-"`
+	Count     int    `json:"-"`
+	CreatedAt string `json:"-"`
+	Token     string `json:"-"`
+	Name      string `json:"-"`
+}
 
 // EmbeddedResponseSchema is the schema that is stored under the response key in ResponseSchema
 type EmbeddedResponseSchema struct {

@@ -2,9 +2,11 @@ package command
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/CactusDev/Xerophi/rethink"
 	"github.com/CactusDev/Xerophi/util"
+	"github.com/fatih/structs"
 
 	"github.com/gin-gonic/gin"
 
@@ -49,24 +51,30 @@ func (c *Command) GetAll(ctx *gin.Context) {
 	}
 
 	var respDecode ResponseSchema
-	response := make([]map[string]interface{}, len(fromDB))
-	var decoded []ResponseSchema
+	var decoded = make([]map[string]interface{}, len(fromDB))
 	for pos, record := range fromDB {
 		// If there's an issue decoding it, just log it and move on to the next record
 		if err := mapstruct.Decode(record, &respDecode); err != nil {
 			log.Error(err.Error())
 			continue
 		}
-		decoded[pos] = respDecode
+		marshalled := util.MarshalResponse(respDecode)
+		decoded[pos] = map[string]interface{}{
+			"id":         marshalled["data"].(map[string]interface{})["id"],
+			"attributes": marshalled["data"].(map[string]interface{})["attributes"],
+			"meta":       marshalled["meta"],
+		}
 	}
-	// foo := util.MarshalResponse(decoded...)
+	var response = make(map[string]interface{})
+
+	response["data"] = decoded
 
 	ctx.JSON(http.StatusOK, response)
 }
 
 // GetSingle returns a single record
 func (c *Command) GetSingle(ctx *gin.Context) {
-	filter := map[string]interface{}{"token": ctx.Param("token"), "name": ctx.Param("name")}
+	filter := map[string]interface{}{"token": strings.ToLower(ctx.Param("token")), "name": ctx.Param("name")}
 	fromDB, err := c.Conn.GetSingle(filter, c.Table)
 	if err != nil {
 		util.NiceError(ctx, err, http.StatusBadRequest)
@@ -88,18 +96,22 @@ func (c *Command) GetSingle(ctx *gin.Context) {
 
 // Create creates a new record
 func (c *Command) Create(ctx *gin.Context) {
-	var vals map[string]interface{}
-	ctx.BindJSON(&vals)
-	vals["token"] = ctx.Param("token")
-	vals["name"] = ctx.Param("name")
+	var vals ClientSchema
 
-	record, err := c.Conn.Create(c.Table, vals)
-	if err != nil {
+	if err := ctx.BindJSON(&vals); err != nil {
+		util.NiceError(ctx, err, http.StatusInternalServerError)
+		return
+	}
+	vals.Token = strings.ToLower(ctx.Param("token"))
+	vals.Name = ctx.Param("name")
+
+	if _, err := c.Conn.Create(c.Table, structs.Map(vals)); err != nil {
 		util.NiceError(ctx, err, http.StatusBadRequest)
 		return
 	}
 
-	ctx.JSON(200, record)
+	// Pass control off to GetSingle since we don't want to duplicate logic
+	c.GetSingle(ctx)
 }
 
 // Delete removes a record
