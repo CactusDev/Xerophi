@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"gopkg.in/go-playground/validator.v8"
+	"gopkg.in/go-playground/validator.v9"
 
 	"github.com/CactusDev/Xerophi/rethink"
 	"github.com/CactusDev/Xerophi/util"
@@ -107,15 +107,19 @@ func (c *Command) Create(ctx *gin.Context) {
 
 	if err != nil {
 		ve, ok := err.(validator.ValidationErrors)
-
-		for _, e := range ve {
-			log.Error(e)
-		}
-
 		if !ok {
-			ctx.JSON(700, ve)
+			ctx.AbortWithStatus(http.StatusInternalServerError)
 		}
-		// ctx.JSON(http.StatusBadRequest, ve)
+		var errors = make([]map[string]interface{}, len(ve))
+		for pos, vErr := range ve {
+			errors[pos] = map[string]interface{}{
+				vErr.Namespace(): vErr.Value(),
+			}
+		}
+		errResp := map[string]interface{}{
+			"errors": errors,
+		}
+		ctx.JSON(http.StatusBadRequest, errResp)
 		// util.NiceError(ctx, err, http.StatusBadRequest)
 		return
 	}
