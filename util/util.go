@@ -2,6 +2,7 @@ package util
 
 import (
 	"github.com/gin-gonic/gin"
+	"gopkg.in/go-playground/validator.v8"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -20,5 +21,10 @@ func MapStringToInterface(vars map[string]string) map[string]interface{} {
 // NiceError factors away the erroring of a function into a clean single-line function call
 func NiceError(ctx *gin.Context, err error, code int) {
 	log.Error(err.Error())
-	ctx.AbortWithError(code, err)
+	ve, ok := err.(validator.ValidationErrors)
+	if !ok {
+		ctx.AbortWithStatus(code)
+		return
+	}
+	ctx.AbortWithStatusJSON(code, ve)
 }

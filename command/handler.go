@@ -1,12 +1,14 @@
 package command
 
 import (
+	"encoding/json"
 	"net/http"
 	"strings"
 
+	"gopkg.in/go-playground/validator.v8"
+
 	"github.com/CactusDev/Xerophi/rethink"
 	"github.com/CactusDev/Xerophi/util"
-	"github.com/fatih/structs"
 
 	"github.com/gin-gonic/gin"
 
@@ -26,12 +28,15 @@ type Command struct {
 func (c *Command) Update(ctx *gin.Context) {
 	filter := map[string]interface{}{"token": ctx.Param("token"), "name": ctx.Param("name")}
 	resp, err := c.Conn.GetByFilter(c.Table, filter, 1)
+
 	if err != nil {
 		util.NiceError(ctx, err, http.StatusBadRequest)
+		return
 	}
 	if resp == nil {
 		// Command doesn't exist, pass control to c.Create
 		c.Create(ctx)
+		return
 	}
 	// Command exists, update it
 	// ctx.JSON(http.StatusOK, gin.H{"data"})
@@ -98,17 +103,42 @@ func (c *Command) GetSingle(ctx *gin.Context) {
 func (c *Command) Create(ctx *gin.Context) {
 	var vals ClientSchema
 
-	if err := ctx.BindJSON(&vals); err != nil {
-		util.NiceError(ctx, err, http.StatusInternalServerError)
+	err := ctx.Bind(&vals)
+
+	if err != nil {
+		ve, ok := err.(validator.ValidationErrors)
+
+		for _, e := range ve {
+			log.Error(e)
+		}
+
+		if !ok {
+			ctx.JSON(700, ve)
+		}
+		// ctx.JSON(http.StatusBadRequest, ve)
+		// util.NiceError(ctx, err, http.StatusBadRequest)
 		return
 	}
 	vals.Token = strings.ToLower(ctx.Param("token"))
 	vals.Name = ctx.Param("name")
 
-	if _, err := c.Conn.Create(c.Table, structs.Map(vals)); err != nil {
-		util.NiceError(ctx, err, http.StatusBadRequest)
+	log.Debugf("%+v", vals)
+
+	var toCreate map[string]interface{}
+
+	if data, err := json.Marshal(vals); err != nil {
+		util.NiceError(ctx, err, http.StatusInternalServerError)
 		return
+	} else {
+		json.Unmarshal(data, &toCreate)
 	}
+
+	log.Debugf("%+v", toCreate)
+
+	// if _, err := c.Conn.Create(c.Table, toCreate); err != nil {
+	// 	util.NiceError(ctx, err, http.StatusBadRequest)
+	// 	return
+	// }
 
 	// Pass control off to GetSingle since we don't want to duplicate logic
 	c.GetSingle(ctx)
