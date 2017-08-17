@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"gopkg.in/go-playground/validator.v9"
-
 	"github.com/CactusDev/Xerophi/rethink"
 	"github.com/CactusDev/Xerophi/util"
 
@@ -106,21 +104,15 @@ func (c *Command) Create(ctx *gin.Context) {
 	err := ctx.Bind(&vals)
 
 	if err != nil {
-		ve, ok := err.(validator.ValidationErrors)
-		if !ok {
-			ctx.AbortWithStatus(http.StatusInternalServerError)
-		}
-		var errors = make([]map[string]interface{}, len(ve))
-		for pos, vErr := range ve {
-			errors[pos] = map[string]interface{}{
-				vErr.Namespace(): vErr.Value(),
+		switch err.(type) {
+		case *json.UnmarshalTypeError:
+			ve, ok := err.(*json.UnmarshalTypeError)
+			if !ok {
+				log.Error("SPLODEY NOT OKAY!")
 			}
+			log.Warn("ve:\t", ve.Field)
 		}
-		errResp := map[string]interface{}{
-			"errors": errors,
-		}
-		ctx.JSON(http.StatusBadRequest, errResp)
-		// util.NiceError(ctx, err, http.StatusBadRequest)
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, err)
 		return
 	}
 	vals.Token = strings.ToLower(ctx.Param("token"))

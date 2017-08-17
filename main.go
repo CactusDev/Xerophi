@@ -8,10 +8,8 @@ import (
 	"github.com/CactusDev/Xerophi/command"
 	"github.com/CactusDev/Xerophi/rethink"
 	"github.com/CactusDev/Xerophi/types"
-	"github.com/CactusDev/Xerophi/validator"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -27,8 +25,6 @@ func init() {
 	flag.BoolVar(&verbose, "v", false, "Run the API in verbose mode")
 	flag.IntVar(&port, "port", 8000, "Specify which port the API will run on")
 	flag.Parse()
-
-	binding.Validator = new(validator.DefaultValidator)
 
 	if debug {
 		log.Warn("Starting API in debug mode!")
