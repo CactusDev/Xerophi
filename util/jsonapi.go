@@ -55,21 +55,18 @@ func pullVals(ift reflect.Type, ifv reflect.Value) (map[string]interface{}, map[
 				id = subID
 			}
 		}
-		// Anything after the first element is tags, figure out which we want
-		for _, tag := range split[1:] {
-			// Need to set the keys w/ their names here if it's a struct
-			switch tag {
-			case "attr":
-				// Attribute
-				attr[split[0]] = value
-			case "meta":
-				// Meta information about the request
-				meta[split[0]] = value
-			case "primary":
-				// It's the primary key/record ID
-				id = ifv.Field(i).String()
-			default: // Ignore any other tags
-			}
+		// Need to set the keys w/ their names here if it's a struct
+		switch split[0] {
+		case "attr":
+			// Attribute
+			attr[split[1]] = value
+		case "meta":
+			// Meta information about the request
+			meta[split[1]] = value
+		case "primary":
+			// It's the primary key/record ID
+			id = ifv.Field(i).String()
+		default: // Ignore any other tags
 		}
 	}
 
