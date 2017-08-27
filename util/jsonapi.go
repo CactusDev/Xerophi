@@ -60,12 +60,15 @@ func pullVals(ift reflect.Type, ifv reflect.Value) (map[string]interface{}, map[
 		case "attr":
 			// Attribute
 			attr[split[1]] = value
+			break
 		case "meta":
 			// Meta information about the request
 			meta[split[1]] = value
+			break
 		case "primary":
 			// It's the primary key/record ID
 			id = ifv.Field(i).String()
+			break
 		default: // Ignore any other tags
 		}
 	}

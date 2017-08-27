@@ -9,7 +9,7 @@ import (
 type ResponseSchema struct {
 	ID        string          `jsonapi:"primary,id"`
 	Name      string          `jsonapi:"attr,name"`
-	Response  schemas.Message `jsonapi:"attr,response"`
+	Context   schemas.Context `jsonapi:"attr,context"` // TODO: use only data packet
 	Count     int             `jsonapi:"attr,count"`
 	Enabled   bool            `jsonapi:"attr,enabled"`
 	CreatedAt string          `jsonapi:"meta,createdAt"`

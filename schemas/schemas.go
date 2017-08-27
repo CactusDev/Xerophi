@@ -4,62 +4,30 @@ import (
 	"strings"
 )
 
+// TODO: Remove `jsonapi:` tags. Should just be `json:`.
 type Message struct {
-	Text   []Component `json:"text"` // FIXME: Anything besides [] breaks this. It is assumed that this is due to the interface being used for Component.
-	Action bool        `json:"action"`
+	Text   []Component `jsonapi:"attr,text"`
+	Action bool        `jsonapi:"attr,action"`
 }
 
-type Component interface {
-	Text() string
-}
-
-func (t Text) Text() string {
-	return t.Data
-}
-
-func (e Emoji) Text() string {
-	return e.Data
-}
-
-func (t Tag) Text() string {
-	return t.Data
-}
-
-func (u URL) Text() string {
-	return u.Data
-}
-
-func (v Variable) Text() string {
-	return v.Data
-}
-
-type Text struct {
-	Data string `json:"data"`
-}
-type Emoji struct {
-	Data string `json:"data"`
-}
-type Tag struct {
-	Data string `json:"data"`
-}
-type URL struct {
-	Data string `json:"data"`
-}
-type Variable struct {
-	Data string `json:"data"`
+// TODO: Remove `jsonapi:` tags. Should just be `json:`.
+type Component struct {
+	Type string `jsonapi:"attr,type"` // HACK: need to validate type
+	Data string `jsonapi:"attr,data"`
 }
 
 type Channel string
 type User string
 type Service string
 
+// TODO: Remove `jsonapi:` tags. Should just be `json:`.
 type Context struct {
-	Packet  Message `json:"packet"`
-	Channel Channel `json:"channel"`
-	User    User    `json:"user,omitempty"`
-	Role    Role    `json:"role,omitempty"`
-	Target  User    `json:"target,omitempty"`
-	Service Service `json:"service"`
+	Packet  Message `jsonapi:"attr,packet"`
+	Channel Channel `jsonapi:"attr,channel"`
+	User    User    `jsonapi:"attr,user,omitempty"`
+	Role    Role    `jsonapi:"attr,role,omitempty"` // FIXME: should return string ("owner"), not int (5). See UnmarshalJSON below.
+	Target  User    `jsonapi:"attr,target,omitempty"`
+	Service Service `jsonapi:"attr,service"`
 }
 
 type Role int

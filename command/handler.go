@@ -131,10 +131,10 @@ func (c *Command) Create(ctx *gin.Context) {
 
 	log.Debugf("%+v", toCreate)
 
-	// if _, err := c.Conn.Create(c.Table, toCreate); err != nil {
-	// 	util.NiceError(ctx, err, http.StatusBadRequest)
-	// 	return
-	// }
+	if _, err := c.Conn.Create(c.Table, toCreate); err != nil {
+		util.NiceError(ctx, err, http.StatusBadRequest)
+		return
+	}
 
 	// Pass control off to GetSingle since we don't want to duplicate logic
 	c.GetSingle(ctx)
