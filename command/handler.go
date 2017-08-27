@@ -2,6 +2,7 @@ package command
 
 import (
 	"encoding/json"
+	"html"
 	"net/http"
 	"strings"
 
@@ -24,7 +25,9 @@ type Command struct {
 
 // Update handles the updating of a record if the record exists, otherwise create it
 func (c *Command) Update(ctx *gin.Context) {
-	filter := map[string]interface{}{"token": ctx.Param("token"), "name": ctx.Param("name")}
+	token := html.EscapeString(ctx.Param("token"))
+	name := html.EscapeString(ctx.Param("name"))
+	filter := map[string]interface{}{"token": token, "name": name}
 	resp, err := c.Conn.GetByFilter(c.Table, filter, 1)
 
 	if err != nil {
@@ -42,7 +45,8 @@ func (c *Command) Update(ctx *gin.Context) {
 
 // GetAll returns all records associated with the token
 func (c *Command) GetAll(ctx *gin.Context) {
-	filter := map[string]interface{}{"token": ctx.Param("token")}
+	token := html.EscapeString(ctx.Param("token"))
+	filter := map[string]interface{}{"token": token}
 	fromDB, err := c.Conn.GetByFilter(c.Table, filter, 0)
 	if err != nil {
 		util.NiceError(ctx, err, http.StatusBadRequest)
@@ -77,7 +81,9 @@ func (c *Command) GetAll(ctx *gin.Context) {
 
 // GetSingle returns a single record
 func (c *Command) GetSingle(ctx *gin.Context) {
-	filter := map[string]interface{}{"token": strings.ToLower(ctx.Param("token")), "name": ctx.Param("name")}
+	token := html.EscapeString(ctx.Param("token"))
+	name := html.EscapeString(ctx.Param("name"))
+	filter := map[string]interface{}{"token": token, "name": name}
 	fromDB, err := c.Conn.GetSingle(filter, c.Table)
 	if err != nil {
 		util.NiceError(ctx, err, http.StatusBadRequest)

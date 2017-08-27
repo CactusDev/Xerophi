@@ -72,6 +72,8 @@ func main() {
 		generateRoutes(handler, group)
 	}
 
+	// TODO: Implement RethinkDB connection verification
+
 	router.Run(fmt.Sprintf(":%d", config.Server.Port))
 
 	log.Warnf("API starting on :%d - %s", port, router.BasePath)
