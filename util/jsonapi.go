@@ -19,10 +19,11 @@ func MarshalResponse(s JSONAPISchema) map[string]interface{} {
 	var data = make(map[string]interface{})
 	ift := reflect.TypeOf(s)
 	ifv := reflect.ValueOf(s)
-	attributes, meta, id := pullVals(ift, ifv)
+	attributes, meta, id, objectType := pullVals(ift, ifv)
 
 	data["attributes"] = attributes
 	data["id"] = id
+	data["type"] = objectType
 	if len(meta) > 0 {
 		response["meta"] = meta
 	}
@@ -32,9 +33,10 @@ func MarshalResponse(s JSONAPISchema) map[string]interface{} {
 	return response
 }
 
-func pullVals(ift reflect.Type, ifv reflect.Value) (map[string]interface{}, map[string]interface{}, string) {
+func pullVals(ift reflect.Type, ifv reflect.Value) (map[string]interface{}, map[string]interface{}, string, string) {
 	var attr = make(map[string]interface{})
 	var meta = make(map[string]interface{})
+	var recordType = ""
 	var id = ""
 	for i := 0; i < ift.NumField(); i++ {
 		var value interface{}
@@ -47,7 +49,7 @@ func pullVals(ift reflect.Type, ifv reflect.Value) (map[string]interface{}, map[
 		if ifv.Field(i).Kind() == reflect.Struct {
 			var subID = ""
 			var subMeta map[string]interface{}
-			value, subMeta, subID = pullVals(ift.Field(i).Type, ifv.Field(i))
+			value, subMeta, subID, _ = pullVals(ift.Field(i).Type, ifv.Field(i))
 			if len(subMeta) > 0 {
 				meta[split[0]] = subMeta
 			}
@@ -56,24 +58,25 @@ func pullVals(ift reflect.Type, ifv reflect.Value) (map[string]interface{}, map[
 			}
 		}
 		// Anything after the first element is tags, figure out which we want
-		for _, tag := range split[1:] {
+		for _, tag := range split {
 			// Need to set the keys w/ their names here if it's a struct
 			switch tag {
 			case "attr":
 				// Attribute
-				attr[split[0]] = value
+				attr[split[1]] = value
 			case "meta":
 				// Meta information about the request
-				meta[split[0]] = value
+				meta[split[1]] = value
 			case "primary":
-				// It's the primary key/record ID
+				// It's the primary key/record ID & record type
 				id = ifv.Field(i).String()
+				recordType = split[1]
 			default: // Ignore any other tags
 			}
 		}
 	}
 
-	return attr, meta, id
+	return attr, meta, id, recordType
 }
 
 // GetTags takes a reflect.StructField object and returns a slice of the associated tags

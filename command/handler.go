@@ -23,7 +23,7 @@ type Command struct {
 	ResponseSchema struct{}            // The schema that will sent in response
 }
 
-// Update handles the updating of a record if the record exists, otherwise create it
+// Update handles the updating of a record if the record exists
 func (c *Command) Update(ctx *gin.Context) {
 	token := html.EscapeString(ctx.Param("token"))
 	name := html.EscapeString(ctx.Param("name"))
@@ -35,12 +35,31 @@ func (c *Command) Update(ctx *gin.Context) {
 		return
 	}
 	if resp == nil {
-		// Command doesn't exist, pass control to c.Create
-		c.Create(ctx)
+		// Resource doesn't exist, return a 404
+		ctx.AbortWithStatus(http.StatusNotFound)
 		return
 	}
-	// Command exists, update it
-	// ctx.JSON(http.StatusOK, gin.H{"data"})
+	// Command exists, lets update it
+	// Bind the JSON from the request
+	var updateData map[string]interface{}
+	err = ctx.BindJSON(updateData)
+	if err != nil {
+		util.NiceError(ctx, err, http.StatusInternalServerError)
+		return
+	}
+	// What ID are we using to update?
+	id, err := util.GetResourceID(resp)
+	if err != nil {
+		ctx.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	updated, err := c.Conn.Update(c.Table, id, updateData)
+	if err != nil {
+		util.NiceError(ctx, err, http.StatusInternalServerError)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"original": resp, "updated": updated})
 }
 
 // GetAll returns all records associated with the token

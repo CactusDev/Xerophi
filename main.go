@@ -46,8 +46,9 @@ func init() {
 func generateRoutes(h types.Handler, g *gin.RouterGroup) {
 	g.GET("", h.GetAll)
 	g.PATCH("/:name", h.Update)
+	g.POST("/:name", h.Create)
 	g.GET("/:name", h.GetSingle)
-	g.DELETE("/:name", h.Create)
+	g.DELETE("/:name", h.Delete)
 }
 
 func main() {
