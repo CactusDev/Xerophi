@@ -56,7 +56,10 @@ func main() {
 		DB:   config.Rethink.DB,
 		Opts: config.Rethink.Connection,
 	}
-	rdbConn.Connect()
+	err := rdbConn.Connect()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	handlers := map[string]types.Handler{
 		"/user/:token/command": &command.Command{
