@@ -123,18 +123,18 @@ interface Config {
         leave: EventConfig;
     };
   
-    whitelistedURLS: string[];
+    whitelistedURLs: string[];
   
     spam: {
         allowUrls: SpamConfig<boolean>;
-        maxCapsScore: SpamConfig<number>;
+        maxCaps: SpamConfig<number>;
         maxEmoji: SpamConfig<number>;
 
-    keywords: {
-	    blacklist: string[];
-        whitelist: string[];
-    };
-  }
+	    keywords: {
+		    blacklist: string[];
+	        whitelist: string[];
+	    };
+    }
 }
 
 interface Repeat {
@@ -164,7 +164,8 @@ interface Channel {
 	uuid: string;
 	trusts: string[];
 	permits: string[];
-	chatters: Chatters
+	chatters: Chatters;
+	config: Config;
 }
 
 interface User {
