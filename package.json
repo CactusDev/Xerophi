@@ -17,6 +17,7 @@
     "boom": "^6.0.0",
     "config": "^1.27.0",
     "hapi": "^16.6.2",
+    "hapi-auth-jwt2": "^7.3.0",
     "joi": "^11.4.0",
     "js-yaml": "^3.10.0",
     "reflect-metadata": "^0.1.10",

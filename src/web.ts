@@ -4,6 +4,13 @@ import * as Hapi from "hapi";
 import { Injectable } from "@angular/core";
 import { AbstractEndpoint, CommandRoute, QuoteRoute, ChannelRoute, ConfigRoute } from "./endpoints";
 
+const users: any = {
+	1: {
+		id: 1,
+		name: "0x01"
+	}
+}
+
 @Injectable()
 export class Web {
 	private _instance: Hapi.Server;
@@ -17,6 +24,14 @@ export class Web {
 	public async start() {
 		console.log("Starting...");
 
+		const validate = (decoded: any, request: Hapi.Request, callback: any) => {
+			// TODO: Create a better check here to make sure the user exists
+			if (!users[decoded.id]) {
+				return callback(null, false);
+			}
+			return callback(null, true);
+		};
+
 		this._instance = new Hapi.Server();
 
 		this._instance.connection({
@@ -25,17 +40,35 @@ export class Web {
 				cors: true
 			}
 		});
-		this._instance.on("request-error", (req: any, error: any) => console.error(error));
-		console.log("Creating endpoints...");
-		this.endpoints.push(new CommandRoute(this, this.config), new QuoteRoute(this, this.config),
-			new ChannelRoute(this, this.config), new ConfigRoute(this, this.config));
-		console.log("Done!");
 
-		console.log("Initializing endpoints...");
-		this.endpoints.forEach(async router => await router.init());
-		console.log(`Done! Initialized ${this.endpoints.length} endpoints!`);
-		this._instance.start();
-		console.log(`Ready! :${this.config.web.port}`);
+		this._instance.on("request-error", (req: any, error: any) => console.error(error));
+	
+		this._instance.register(require("hapi-auth-jwt2"), (err) => {
+			if (err) {
+				throw err;
+			}
+
+			this._instance.auth.strategy("jwt", "jwt", {
+				key: "NeverShareYourSecret",
+				validateFunc: validate,
+				verifyOptions: {
+					algorithms: ["HS256"]
+				}
+			});
+
+			this._instance.auth.default("jwt");
+
+			console.log("Creating endpoints...");
+			this.endpoints.push(new CommandRoute(this, this.config), new QuoteRoute(this, this.config),
+				new ChannelRoute(this, this.config), new ConfigRoute(this, this.config));
+			console.log("Done!");
+
+			console.log("Initializing endpoints...");
+			this.endpoints.forEach(async router => await router.init());
+			console.log(`Done! Initialized ${this.endpoints.length} endpoints!`);
+			this._instance.start();
+			console.log(`Ready! :${this.config.web.port}`);
+		});
 	}
 
 	public get instance() {
