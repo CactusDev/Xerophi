@@ -88,11 +88,13 @@ interface Command {
 }
 
 interface Quote {
-	quote: Component[];
 	quoteId: number;
+	channel: string;
 	quoted: string;
 	when: string;
 	enabled: boolean;
+	count: number;
+	quote: Component[];
 }
 
 interface SpamConfig<T> {

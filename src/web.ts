@@ -2,7 +2,7 @@
 import { Config } from "./config";
 import * as Hapi from "hapi";
 import { Injectable } from "@angular/core";
-import { AbstractEndpoint, CommandRoute } from "./endpoints";
+import { AbstractEndpoint, CommandRoute, QuoteRoute } from "./endpoints";
 
 @Injectable()
 export class Web {
@@ -27,7 +27,7 @@ export class Web {
 		});
 		this._instance.on("request-error", (req: any, error: any) => console.error(error));
 		console.log("Creating endpoints...");
-		this.endpoints.push(new CommandRoute(this, this.config));
+		this.endpoints.push(new CommandRoute(this, this.config), new QuoteRoute(this, this.config));
 		console.log("Done!");
 
 		console.log("Initializing endpoints...");
