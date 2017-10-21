@@ -1,0 +1,25 @@
+{
+  "name": "Xerophi",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "CactusDev",
+  "license": "MIT",
+  "dependencies": {
+    "@angular/core": "^4.4.6",
+    "@types/boom": "^4.3.7",
+    "@types/config": "0.0.33",
+    "@types/hapi": "^16.1.10",
+    "@types/joi": "^10.4.4",
+    "boom": "^6.0.0",
+    "config": "^1.27.0",
+    "hapi": "^16.6.2",
+    "joi": "^11.4.0",
+    "js-yaml": "^3.10.0",
+    "reflect-metadata": "^0.1.10",
+    "rxjs": "^5.5.0"
+  }
+}

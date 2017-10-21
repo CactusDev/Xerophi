@@ -1,0 +1,9 @@
+mongo:
+  host: ""
+  port: 123
+  username: loginname
+  password: password
+  database: cactus
+
+web:
+  port: 7000
