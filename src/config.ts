@@ -11,4 +11,8 @@ export class Config {
     public web: {
         port: number;
     }
+
+    public authentication: {
+        secret: string;
+    }
 }

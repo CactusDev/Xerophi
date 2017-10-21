@@ -49,7 +49,7 @@ export class Web {
 			}
 
 			this._instance.auth.strategy("jwt", "jwt", {
-				key: "NeverShareYourSecret",
+				key: this.config.authentication.secret,
 				validateFunc: validate,
 				verifyOptions: {
 					algorithms: ["HS256"]

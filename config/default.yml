@@ -7,3 +7,6 @@ mongo:
 
 web:
   port: 7000
+
+authentication:
+  secret: "supersecretthing"
