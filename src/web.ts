@@ -59,7 +59,6 @@ export class Web {
 					algorithms: ["HS256"]
 				}
 			});
-
 			this._instance.auth.default("jwt");
 
 			console.log("Creating endpoints...");
@@ -68,10 +67,12 @@ export class Web {
 			console.log("Done!");
 
 			console.log("Initializing endpoints...");
-			this.endpoints.forEach(async router => await router.init());
-			console.log(`Done! Initialized ${this.endpoints.length} endpoints!`);
+			this.endpoints.forEach(async endpoint => await endpoint.init());
+			console.log(`Done! Initialized ${this.endpoints.length} endpoint handlers!`);
+
 			this._instance.start();
 			console.log(`Ready! :${this.config.web.port}`);
+			console.log(`Created ${this._instance.table()[0].table.length} endpoints!`);
 		});
 	}
 
