@@ -2,11 +2,12 @@
 import * as Hapi from "hapi";
 import * as Boom from "boom";
 
-const argon2 = require("argon2");
 const aguid = require("aguid");
 
 import { Authorization } from "../../authorization";
 import { defaultScopes } from "../../authorization/scopes";
+
+import { compare } from "../../util";
 
 const logins: any = {
 	"0x01": "$argon2i$v=19$m=4096,t=3,p=1$2WC62WsiICG2rnfToHtPpw$Kpf6d2N+qLmhCJgZKYSUn1hDMIwUUbejzGpkcPGNKwE"
@@ -23,22 +24,6 @@ const userScopes: {[name: string]: string[]} = {
 
 export class LoginController {
 
-	private async compare(password: string, hash: string): Promise<boolean> {
-		try {
-			return await argon2.verify(hash, password);
-		} catch (e) {
-			return false;
-		}
-	}
-
-	private async hash(password: string): Promise<string> {
-		try {
-			return await argon2.hash(password);
-		} catch (e) {
-			return null;
-		}
-	}
-
 	public async attemptLogin(request: Hapi.Request, reply: Hapi.ReplyNoContinue, key: string) {
 		const user = request.headers["user"];
 		const password = request.headers["password"];
@@ -46,7 +31,7 @@ export class LoginController {
 			return; // TODO: error here
 		}
 
-		if (await this.compare(password, logins[user])) {
+		if (await compare(password, logins[user])) {
 			// Valid user, let them exist!
 			const session: any = {
 				valid: true,

@@ -174,7 +174,16 @@ export class MongoHandler {
 		return result.matchedCount === 1;
 	}
 
+	public async getUser(username: string): Promise<User> {
+		const users = await this.users.find({ username }).limit(1).toArray();
+		return users.length == 1 ? users[0] : null;
+	}
+
 	public async createUser(username: string, passwordHash: string, scopes: string[]): Promise<User> {
+		// Make sure this user doesn't exist
+		if (await this.getUser(username)) {
+			return null;
+		}
 		const user: User = {
 			username,
 			deletedAt: null,
@@ -238,10 +247,5 @@ export class MongoHandler {
 
 		this.users.insertOne(user);
 		return user;
-	}
-
-	public async getUser(username: string): Promise<User> {
-		const users = await this.users.find({ username }).limit(1).toArray();
-		return users.length == 1 ? users[0] : null;
 	}
 }
