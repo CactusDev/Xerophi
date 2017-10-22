@@ -13,7 +13,8 @@ export class CommandRoute extends AbstractEndpoint {
 			method: "GET",
 			path: "/{channel}/command/{command}",
 			config: {
-				handler: (request, reply) => this.controller.getCommand(request, reply)
+				handler: (request, reply) => this.controller.getCommand(request, reply),
+				auth: false
 			}
 		});
 	}

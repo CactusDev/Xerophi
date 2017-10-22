@@ -13,7 +13,8 @@ export class QuoteRoute extends AbstractEndpoint {
 			method: "GET",
 			path: "/{channel}/quote/{id}",
 			config: {
-				handler: (request, reply) => this.controller.getQuote(request, reply)
+				handler: (request, reply) => this.controller.getQuote(request, reply),
+				auth: false
 			}
 		});
 	}
