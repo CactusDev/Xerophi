@@ -18,6 +18,12 @@ export class CommandController {
 	public async getCommand(request: Hapi.Request, reply: Hapi.ReplyNoContinue) {
 		const name = request.params["command"];
 		const channel = request.params["channel"];
+
+		const command = await this.mongo.getCommand(channel, name);
+		if (!command) {
+			return reply(Boom.notFound("Invalid command"));
+		}
+		return reply(command);
 	}
 
 	public async createCommand(request: Hapi.Request, reply: Hapi.ReplyNoContinue) {
