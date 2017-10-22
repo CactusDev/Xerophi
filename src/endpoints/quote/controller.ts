@@ -19,10 +19,10 @@ export class QuoteController {
 	public async getQuote(request: Hapi.Request, reply: Hapi.ReplyNoContinue) {
 		const id = +request.params["id"];
 		const channel = request.params["channel"];
+		const random = !!request.query && !!request.query.random || false;
 
 		if (id) {
-			const random = !!request.payload && !!request.payload.random || false;
-			const response = await this.mongo.getQuote(channel, random, id);
+			const response = await this.mongo.getQuote(channel, false, id);
 			if (!response || response.deletedAt) {
 				return reply(Boom.notFound("Invalid quote"));
 			}
@@ -32,7 +32,18 @@ export class QuoteController {
 			}
 			return reply(Boom.notFound("Invalid quote"));
 		} else {
-			const response = await this.mongo.getAllQuotes(channel);
+			if (random) {
+				const response = await this.mongo.getQuote(channel, true);
+				if (!response || response.deletedAt) {
+					return reply(Boom.notFound("Invalid quote"));
+				}
+				delete response.deletedAt;
+				if (!response.deletedAt && response.enabled) {
+					return reply(response);
+				}
+				return reply(Boom.internal("Got invalid quote from filter?"));
+			}
+ 			const response = await this.mongo.getAllQuotes(channel);
 			for (let quote of response) {
 				if (quote.deletedAt) {
 					const index = response.indexOf(quote);

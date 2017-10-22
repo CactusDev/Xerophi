@@ -42,7 +42,7 @@ export class MongoHandler {
 		return await this.quotes.find({ channel }).toArray();
 	}
 
-	public async getQuote(channel: string, random: boolean, quoteId: number): Promise<Quote> {
+	public async getQuote(channel: string, random: boolean, quoteId?: number): Promise<Quote> {
 		if (!quoteId && random) {
 			const quotes = await this.quotes.aggregate([
 				{
@@ -50,9 +50,16 @@ export class MongoHandler {
 				},
 				{
 					"$match": { channel }
+				},
+				{
+					"$match": { deletedAt: null }
 				}
 			]).toArray();
+
 			if (quotes.length === 0) {
+				if (random) { // HACK
+					return await this.getQuote(channel, random, quoteId);
+				}
 				return null;
 			}
 			return quotes[0];
