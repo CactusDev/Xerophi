@@ -1,5 +1,6 @@
 
 import { Config } from "../config";
+import { theTime } from "../util";
 
 import * as Mongo from "mongodb";
 
@@ -75,6 +76,7 @@ export class MongoHandler {
 			name: name,
 			channel,
 			response,
+			deletedAt: null,
 			count: 0,
 			enabled: true,
 			restrictions: {
@@ -136,6 +138,17 @@ export class MongoHandler {
 		// Update the attribute
 		dbCommand[attribute] = value;
 		const result = await this.commands.updateOne({ channel, name: command }, dbCommand);
+		return result.matchedCount === 1;
+	}
+
+	public async softDeleteCommand(name: string, channel: string): Promise<boolean> {
+		const command = await this.getCommand(channel, name);
+		if (!command) {
+			return false;
+		}
+		command.enabled = false;
+		command.deletedAt = theTime();
+		const result = await this.commands.updateOne({ channel, name }, command);
 		return result.matchedCount === 1;
 	}
 }

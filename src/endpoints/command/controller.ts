@@ -22,7 +22,7 @@ export class CommandController {
 		const channel = request.params["channel"];
 
 		const command = await this.mongo.getCommand(channel, name);
-		if (!command) {
+		if (!command || command.deletedAt) {
 			return reply(Boom.notFound("Invalid command"));
 		}
 		return reply(command);
@@ -74,6 +74,17 @@ export class CommandController {
 			if (!updated) {
 				return reply(Boom.notFound("Invalid command."));
 			}
+		}
+		return reply({}).code(204);
+	}
+
+	public async softDeleteCommand(request: Hapi.Request, reply: Hapi.ReplyNoContinue) {
+		const channel = request.params["channel"];
+		const command = request.params["command"];
+
+		const deleted = await this.mongo.softDeleteCommand(command, channel);
+		if (!deleted) {
+			return reply(Boom.notFound("Invalid command"));
 		}
 		return reply({}).code(204);
 	}

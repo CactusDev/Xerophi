@@ -81,6 +81,7 @@ interface Command {
 	response: CactusMessagePacket[];
 	count: number;
 	enabled: boolean;
+	deletedAt: string;
 	restrictions: {
 		service: string[];
 		role: string;
