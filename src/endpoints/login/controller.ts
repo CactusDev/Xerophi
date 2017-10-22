@@ -11,6 +11,22 @@ const logins: any = {
 	"0x01": "$argon2i$v=19$m=4096,t=3,p=1$2WC62WsiICG2rnfToHtPpw$Kpf6d2N+qLmhCJgZKYSUn1hDMIwUUbejzGpkcPGNKwE"
 }
 
+// @Temp
+const userScopes: {[name: string]: string[]} = {
+	"0x01": [
+		"user:basic:auth",
+		"user:command:create",
+		"user:command:delete",
+		"user:command:edit",
+		"user:quote:create",
+		"user:quote:delete"
+	],
+	test: [
+		"admin:full"
+	]
+}
+
+
 export class LoginController {
 
 	private async compare(password: string, hash: string): Promise<boolean> {
@@ -41,6 +57,7 @@ export class LoginController {
 			const session: any = {
 				valid: true,
 				id: aguid(),
+				scopes: userScopes[user],
 				exp: new Date().getTime() + 60 * 60 * 1000 // This will expire in one hour
 			};
 			reply({

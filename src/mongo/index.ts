@@ -9,6 +9,7 @@ export class MongoHandler {
 	private connection: Mongo.Db;
 	private commands: Mongo.Collection;
 	private quotes: Mongo.Collection;
+	private users: Mongo.Collection;
 
 	constructor(private config: Config) {
 	}
@@ -27,6 +28,7 @@ export class MongoHandler {
 
 			this.quotes = this.connection.collection("quotes");
 			this.commands = this.connection.collection("commands");
+			this.users = this.connection.collection("users");
 		});
 	}
 
@@ -168,5 +170,76 @@ export class MongoHandler {
 		quote.enabled = false;
 		const result = await this.quotes.updateOne({ channel, quoteId: id }, quote);
 		return result.matchedCount === 1;
+	}
+
+	public async createUser(username: string, passwordHash: string, scopes: string[]): Promise<User> {
+		const user: User = {
+			username,
+			deletedAt: null,
+			uuid: "",
+			passwordHash,
+			channels: [],
+			scopes,
+			commands: [],
+			config: {
+				repeat: {
+					disabled: false,
+					onlyLive: true,
+					defaultMinimum: 60
+				},
+				events: {
+					follow: {
+						message: "Thanks for following, %USER%!",
+						enabled: true
+					},
+					subscribe: {
+						message: "Thanks for subscribing, %USER%!",
+						enabled: true
+					},
+					host: {
+						message: "Thanks for hosting the channel, %USER% (%VIEWERS% viewers)",
+						enabled: false
+					},
+					join: {
+						message: "Welcome, %USER%",
+						enabled: false
+					},
+					leave: {
+						message: "Bye, %USER%",
+						enabled: false
+					}
+				},
+				whitelistedURLs: [],
+				spam: {
+					allowUrls: {
+						action: "purge",
+						value: false,
+						warnings: 1
+					},
+					maxCaps: {
+						action: "purge",
+						value: 10,
+						warnings: 1
+					},
+					maxEmoji: {
+						action: "purge",
+						value: 2,
+						warnings: 1
+					},
+					keywords: {
+						blacklist: [],
+						whitelist: []
+					}
+				}
+			}
+		}
+
+		this.users.insertOne(user);
+		return user;
+	}
+
+	public async getUser(username: string): Promise<User> {
+		const users = await this.users.find({ username }).limit(1).toArray();
+		return users.length == 1 ? users[0] : null;
 	}
 }

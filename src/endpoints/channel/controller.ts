@@ -2,95 +2,69 @@
 import * as Hapi from "hapi";
 import * as Boom from "boom";
 
+import { MongoHandler } from "../../mongo";
+
+interface APIUser {
+	username: string;
+	password: string;
+	scopes: string;
+}
+
+const usersKeys = ["username", "password", "scopes"];
+
 export class ChannelController {
 
-	public async getChannel(request: Hapi.Request, reply: Hapi.ReplyNoContinue) {
+	constructor(public mongo: MongoHandler) {
+	}
+
+	private async isValidUser(user: any): Promise<boolean> {
+		for (let key of usersKeys) {
+			if (!user[key]) return false;
+		}
+		return true;
+	}
+
+	public async getService(request: Hapi.Request, reply: Hapi.ReplyNoContinue) {
 		const channel = request.params["channel"];
 		const service = request.params["service"];
 
-		// TODO: Make this actually pull from a database and display information
-		reply(!!service ? this.hasService(channel, service) : this.noService(channel)).header("Authorization", request.headers.authorization);
-	}
-
-	private hasService(channel: string, service: string): Channel {
-		return {
-			repeats: [],
-			username: "0x01",
-			service: "twitch",
-			uuid: "",
-			trusts: ["Innectic", "2Cubed", "ParadigmShift3d"],
-			permits: {},
-			chatters: {
-				Innectic: {
-					points: 100
-				}
-			},
-			auth: {
-				accountName: "CactusBotDev",
-				access: "pretendthisisarealoauthkey"
-			}
-		};
-	}
-
-	private noService(channel: string): User {
-		return {
-			username: channel,
-			deletedAt: null,
-			uuid: "",
-			passwordHash: "",
-			channels: [],
-			scopes: [],
-			commands: [],
-			config: {
-				repeat: {
-					disabled: false,
-					onlyLive: true,
-					defaultMinimum: 60
-				},
-				events: {
-					follow: {
-						message: "Thanks for following, %USER%!",
-						enabled: true
-					},
-					subscribe: {
-						message: "Thanks for subscribing, %USER%!",
-						enabled: true
-					},
-					host: {
-						message: "Thanks for hosting the channel, %USER% (%VIEWERS% viewers)",
-						enabled: false
-					},
-					join: {
-						message: "Welcome, %USER%",
-						enabled: false
-					},
-					leave: {
-						message: "Bye, %USER%",
-						enabled: false
-					}
-				},
-				whitelistedURLs: [],
-				spam: {
-					allowUrls: {
-						action: "purge",
-						value: false,
-						warnings: 1
-					},
-					maxCaps: {
-						action: "purge",
-						value: 10,
-						warnings: 1
-					},
-					maxEmoji: {
-						action: "purge",
-						value: 2,
-						warnings: 1
-					},
-					keywords: {
-						blacklist: [],
-						whitelist: []
-					}
-				}				
+		const dbChannel = await this.mongo.getUser(channel);
+		if (!dbChannel) {
+			return reply(Boom.notFound("Invalid user"));
 		}
+
+		if (dbChannel.channels.length === 0) {
+			return reply(Boom.notFound("Channel doesn't have service"));
+		}
+		// See if we have the service
+		dbChannel.channels.forEach(async serviceChannel => {
+			if (serviceChannel.service === service) {
+				// This is the channel we're looking for, remove all the special data
+				delete serviceChannel.auth;
+				reply(serviceChannel);
+			}
+		});
+	}
+
+	public async getChannel(request: Hapi.Request, reply: Hapi.ReplyNoContinue) {
+		const channel = request.params["channel"];
+
+		const dbChannel = await this.mongo.getUser(channel);
+		if (!dbChannel) {
+			return reply(Boom.notFound("Invalid user"));
+		}
+
+		delete dbChannel.passwordHash;
+		delete dbChannel.deletedAt;
+
+		for (let service of dbChannel.channels) {
+			delete service.auth;
+		}
+
+		reply(dbChannel);
+	}
+
+	public async createUser(request: Hapi.Request, reply: Hapi.ReplyNoContinue) {
+
 	}
 }

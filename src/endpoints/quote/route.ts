@@ -32,7 +32,10 @@ export class QuoteRoute extends AbstractEndpoint {
 				method: "POST",
 				path: "/{channel}/quote",
 				config: {
-					handler: (request, reply) => this.controller.createQuote(request, reply)
+					handler: (request, reply) => this.controller.createQuote(request, reply),
+					auth: {
+						scope: ["user:quote:create"],
+					}
 				}
 			},
 			{

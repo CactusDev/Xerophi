@@ -7,13 +7,6 @@ import { AbstractEndpoint, CommandRoute, QuoteRoute, ChannelRoute, ConfigRoute, 
 import { Authorization } from "./authorization";
 import { MongoHandler } from "./mongo";
 
-const users: any = {
-	1: {
-		id: 1,
-		name: "0x01"
-	}
-}
-
 @Injectable()
 export class Web {
 	private _instance: Hapi.Server;
@@ -32,10 +25,13 @@ export class Web {
 
 		const validate = (decoded: any, request: Hapi.Request, callback: any) => {
 			// TODO: Create a better check here to make sure the user exists
-			Authorization.isValid(request.headers.authorization).then(valid => callback(null, valid));
+			Authorization.isValid(request.headers.authorization).then(valid => callback(null, valid, { scope: decoded.scopes }));
 		};
 
 		this._instance = new Hapi.Server();
+
+		this._instance.on("response", (request) =>
+			console.log(`${request.info.remoteAddress}: ${request.method.toUpperCase()} <${request.response.statusCode}> ${request.url.path}`));
 
 		this._instance.connection({
 			port: this.config.web.port,
