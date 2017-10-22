@@ -59,7 +59,6 @@ export class MongoHandler {
 		if (quoteId === -1) {
 			return null;
 		}
-		console.log("RSEIOTNRSEIOTNRSEIOTNRSEIOTN", quoteId);
 		return await this.quotes.findOne({ channel, quoteId });
 	}
 

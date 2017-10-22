@@ -24,8 +24,7 @@ export class QuoteController {
 			const random = !!request.payload && !!request.payload.random || false;
 			const response = await this.mongo.getQuote(channel, random, id);
 			if (!response) {
-				console.log(channel, random, id);
-				console.error("No quote?"); // TODO: Respond
+				return reply(Boom.notFound());
 			}
 			delete response.deletedAt;
 			return reply(response);
@@ -58,9 +57,7 @@ export class QuoteController {
 			count: 0,
 			quote: request.payload.quote
 		};
-		console.log("Inserting");
 		await this.mongo.createQuote(quote)
-		console.log("Done");
 
 		delete quote.deletedAt;
 		reply(quote);
