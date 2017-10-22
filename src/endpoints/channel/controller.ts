@@ -32,7 +32,7 @@ export class ChannelController {
 		const service = request.params.service;
 
 		const dbChannel = await this.mongo.getUser(channel);
-		if (!dbChannel) {
+		if (!dbChannel || dbChannel.deletedAt) {
 			return reply(Boom.notFound("Invalid user"));
 		}
 
@@ -53,7 +53,7 @@ export class ChannelController {
 		const channel = request.params.channel;
 
 		const dbChannel = await this.mongo.getUser(channel);
-		if (!dbChannel) {
+		if (!dbChannel || dbChannel.deletedAt) {
 			return reply(Boom.notFound("Invalid user"));
 		}
 
@@ -90,5 +90,11 @@ export class ChannelController {
 
 	public async removeUser(request: Hapi.Request, reply: Hapi.ReplyNoContinue) {
 		const channel = request.params.channel;
+
+		const deleted = await this.mongo.softDeleteUser(channel);
+		if (!deleted) {
+			return reply(Boom.notFound("Invalid user"));
+		}
+		return reply({}).code(204);
 	}
 }

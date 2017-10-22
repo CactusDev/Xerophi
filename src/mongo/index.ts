@@ -245,7 +245,19 @@ export class MongoHandler {
 			}
 		}
 
-		this.users.insertOne(user);
+		await this.users.insertOne(user);
 		return user;
+	}
+
+	public async softDeleteUser(username: string): Promise<boolean> {
+		// Ensure the user exists
+		const user = await this.getUser(username);
+		if (!user || user.deletedAt) {
+			return false;
+		}
+		user.deletedAt = theTime();
+
+		await this.users.updateOne({ username }, user);
+		return true;
 	}
 }
