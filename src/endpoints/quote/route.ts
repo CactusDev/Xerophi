@@ -6,13 +6,23 @@ import { QuoteController } from "./controller";
 
 export class QuoteRoute extends AbstractEndpoint {
 
-	private controller = new QuoteController();
+	private controller: QuoteController;
 
 	public async init() {
+		this.controller = new QuoteController(this.web.mongo);
+
 		this.web.instance.route([
 			{
 				method: "GET",
 				path: "/{channel}/quote/{id}",
+				config: {
+					handler: (request, reply) => this.controller.getQuote(request, reply),
+					auth: false
+				}
+			},
+			{
+				method: "GET",
+				path: "/{channel}/quote",
 				config: {
 					handler: (request, reply) => this.controller.getQuote(request, reply),
 					auth: false

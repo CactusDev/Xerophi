@@ -6,6 +6,7 @@ export class Config {
         username: string;
         password: string;
         database: string;
+        authdb: string;
     }
 
     public web: {

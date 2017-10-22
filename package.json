@@ -14,6 +14,7 @@
     "@types/config": "0.0.33",
     "@types/hapi": "^16.1.10",
     "@types/joi": "^10.4.4",
+    "@types/mongodb": "^2.2.14",
     "aguid": "^2.0.0",
     "argon2": "^0.16.2",
     "boom": "^6.0.0",
@@ -23,6 +24,7 @@
     "joi": "^11.4.0",
     "js-yaml": "^3.10.0",
     "moment-strftime": "^0.2.3",
+    "mongodb": "^2.2.33",
     "reflect-metadata": "^0.1.10",
     "rxjs": "^5.5.0"
   }

@@ -2,9 +2,15 @@
 import * as Hapi from "hapi";
 import * as Boom from "boom";
 
+import { MongoHandler } from "../../mongo";
+
 const moment = require("moment-strftime");
 
 export class QuoteController {
+
+	constructor(private mongo: MongoHandler) {
+
+	}
 
 	private async verifyData(data: string): Promise<boolean> {
 		return true; // TODO: How does this even get verified?
@@ -14,28 +20,22 @@ export class QuoteController {
 		const id = +request.params["id"];
 		const channel = request.params["channel"];
 
-		// TODO: Make this actually pull from a database and display information
-		const response: Quote = {
-			quoteId: id,
-			channel: channel,
-			quoted: "2Cubed",
-			createdAt: "2017 10-21 2:14",
-			deletedAt: null,
-			enabled: true,
-			count: 0,
-			quote: [
-				{
-					type: "text",
-					data: "I will hit you with a potato"
-				},
-				{
-					type: "emoji",
-					data: "green_heart"
-				}
-			]
-		};
-		delete response.deletedAt;
-		reply(response);
+		if (id) {
+			const random = !!request.payload && !!request.payload.random || false;
+			const response = await this.mongo.getQuote(channel, random, id);
+			if (!response) {
+				console.log(channel, random, id);
+				console.error("No quote?"); // TODO: Respond
+			}
+			delete response.deletedAt;
+			return reply(response);
+		} else {
+			const response = await this.mongo.getAllQuotes(channel);
+			for (let quote of response) {
+				delete quote.deletedAt;
+			}
+			return reply(response);
+		}
 	}
 
 	public async createQuote(request: Hapi.Request, reply: Hapi.ReplyNoContinue) {
@@ -58,7 +58,10 @@ export class QuoteController {
 			count: 0,
 			quote: request.payload.quote
 		};
-		// TODO: Insert
+		console.log("Inserting");
+		await this.mongo.createQuote(quote)
+		console.log("Done");
+
 		delete quote.deletedAt;
 		reply(quote);
 	}

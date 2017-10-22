@@ -4,6 +4,7 @@ mongo:
   username: loginname
   password: password
   database: cactus
+  authdb: admin
 
 web:
   port: 7000

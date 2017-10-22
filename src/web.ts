@@ -5,6 +5,7 @@ import { Injectable } from "@angular/core";
 import { AbstractEndpoint, CommandRoute, QuoteRoute, ChannelRoute, ConfigRoute, LoginRoute } from "./endpoints";
 
 import { Authorization } from "./authorization";
+import { MongoHandler } from "./mongo";
 
 const users: any = {
 	1: {
@@ -18,12 +19,15 @@ export class Web {
 	private _instance: Hapi.Server;
 
 	private endpoints: AbstractEndpoint[] = [];
+	public mongo: MongoHandler;
 
 	constructor(protected config: Config) {
 
 	}
 
-	public async start() {
+	public async start(mongo: MongoHandler) {
+		this.mongo = mongo;
+
 		console.log("Starting...");
 
 		const validate = (decoded: any, request: Hapi.Request, callback: any) => {

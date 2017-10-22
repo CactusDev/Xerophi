@@ -5,6 +5,7 @@ import { Injectable } from "@angular/core";
 import { Config } from "./config";
 
 import { Web } from "./web";
+import { MongoHandler } from "./mongo";
 
 @Injectable()
 export class Core {
@@ -14,6 +15,8 @@ export class Core {
     }
 
     public async start() {
-        this.web.start();
+    	const mongo = new MongoHandler(this.config);
+    	await mongo.connect();
+        this.web.start(mongo);
     }
 }
