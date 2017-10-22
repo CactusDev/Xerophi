@@ -19,12 +19,28 @@ export class ChannelController {
 			service: "twitch",
 			uuid: "",
 			trusts: ["Innectic", "2Cubed", "ParadigmShift3d"],
-			permits: [],
+			permits: {},
 			chatters: {
 				Innectic: {
 					points: 100
 				}
 			},
+			auth: {
+				accountName: "CactusBotDev",
+				access: "pretendthisisarealoauthkey"
+			}
+		};
+	}
+
+	private noService(channel: string): User {
+		return {
+			username: channel,
+			deletedAt: null,
+			uuid: "",
+			passwordHash: "",
+			channels: [],
+			scopes: [],
+			commands: [],
 			config: {
 				repeat: {
 					disabled: false,
@@ -75,19 +91,6 @@ export class ChannelController {
 						whitelist: []
 					}
 				}				
-			}
-		};
-	}
-
-	private noService(channel: string): User {
-		return {
-			username: channel,
-			deletedAt: null,
-			uuid: "",
-			passwordHash: "",
-			channels: [],
-			scopes: [],
-			commands: []
 		}
 	}
 }

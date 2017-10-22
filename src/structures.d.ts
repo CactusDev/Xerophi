@@ -159,15 +159,23 @@ interface Chatters {
 	}
 }
 
+interface Permits {
+	[username: string]: {
+		time: number;
+		offenses: number;
+		reason: string;
+	}
+}
+
 interface Channel {
 	repeats: Repeat[];
 	username: string;
 	service: string;
 	uuid: string;
 	trusts: string[];
-	permits: string[];
+	permits: Permits;
 	chatters: Chatters;
-	config: Config;
+	auth: ServiceAuth;
 }
 
 interface User {
@@ -178,4 +186,5 @@ interface User {
 	channels: Channel[];
 	scopes: string[];
 	commands: Command[];
+	config: Config;
 }
