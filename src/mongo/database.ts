@@ -62,7 +62,27 @@ export class MongoHandler {
 		return await this.quotes.findOne({ channel, quoteId });
 	}
 
-	public async createCommand(command: Command) {
+	public async getCommand(channel: string, name: string): Promise<Command> {
+		const commands = await this.commands.find({ channel, name }).toArray();
+		return commands.length == 0 ? null : commands[0];
+	}
+
+	public async createCommand(channel: string, name: string, response: CactusMessagePacket[], role: string): Promise<boolean> {
+		if (await this.getCommand(channel, name)) {
+			return false;
+		}
+		const command: Command = {
+			name: name,
+			channel,
+			response,
+			count: 0,
+			enabled: true,
+			restrictions: {
+				service: [],
+				role
+			}
+		};
 		this.commands.insertOne(command);
+		return true;
 	}
 }

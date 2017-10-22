@@ -83,7 +83,7 @@ interface Command {
 	enabled: boolean;
 	restrictions: {
 		service: string[];
-		role: Role;
+		role: string;
 	}
 }
 

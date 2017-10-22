@@ -23,7 +23,7 @@ export class QuoteController {
 		if (id) {
 			const random = !!request.payload && !!request.payload.random || false;
 			const response = await this.mongo.getQuote(channel, random, id);
-			if (!response) {
+			if (!response || response.deletedAt) {
 				return reply(Boom.notFound());
 			}
 			delete response.deletedAt;
@@ -38,7 +38,6 @@ export class QuoteController {
 	}
 
 	public async createQuote(request: Hapi.Request, reply: Hapi.ReplyNoContinue) {
-		const id = 10; // TODO: This should be the proper id after inserting
 		if (!await this.verifyData(request.payload.quote)) {
 			// Invalid data, tell the user.
 			return reply(Boom.badData("Invalid quote data"));
@@ -48,7 +47,7 @@ export class QuoteController {
 		const quoted = request.payload.quoted;
 
 		const quote: Quote = {
-			quoteId: id,
+			quoteId: -1,
 			channel: channel,
 			quoted: quoted,
 			createdAt: moment().strftime("%a %b %d %H:%M:%S %Y"),
