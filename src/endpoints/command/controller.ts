@@ -60,7 +60,8 @@ export class CommandController {
 		const channel = request.params["channel"];
 		const command = request.params["command"];
 		
-		if (!request.payload || !(request.payload.role || request.payload.response || request.payload.name)) {
+		if (!request.payload || !(request.payload.role ||
+			request.payload.response || request.payload.name || request.payload.enabled)) {
 			return reply(Boom.badData("Must supply something to update."));
 		}
 
@@ -76,6 +77,8 @@ export class CommandController {
 			updated = await this.mongo.commandEditResponse(request.payload.response, command, channel);
 		} else if (request.payload.name) {
 			updated = await this.mongo.commandEditName(request.payload.name, command, channel);
+		} else if (request.payload.enabled) {
+			updated = await this.mongo.commandEditEnabled(request.payload.enabled, command, channel);
 		} else {
 			return reply(Boom.badData("Invalid attribute"));
 		}

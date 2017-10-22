@@ -121,4 +121,16 @@ export class MongoHandler {
 		const result = await this.commands.updateOne({ channel, name: command }, dbCommand);
 		return result.matchedCount === 1;
 	}
+
+	public async commandEditEnabled(enabled: boolean, command: string, channel: string): Promise<boolean> {
+		// Make sure the command exists
+		const dbCommand = await this.getCommand(channel, command);
+		if (!dbCommand) {
+			return false;
+		}
+		// Update the attribute
+		dbCommand.enabled = enabled;
+		const result = await this.commands.updateOne({ channel, name: command }, dbCommand);
+		return result.matchedCount === 1;
+	}
 }
