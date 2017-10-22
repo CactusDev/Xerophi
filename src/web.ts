@@ -62,25 +62,6 @@ export class Web {
 
 			this._instance.auth.default("jwt");
 
-			this._instance.route([
-				{
-					method: "GET",
-					path: "/",
-					config: {
-						auth: false
-					},
-					handler: (request, reply) => reply({a: "thing"})
-				},
-				{
-					method: "GET",
-					path: "/a",
-					config: {
-						auth: "jwt"
-					},
-					handler: (request, reply) => reply({b: "stuff"})
-				}
-			]);
-
 			console.log("Creating endpoints...");
 			this.endpoints.push(new CommandRoute(this, this.config), new QuoteRoute(this, this.config),
 				new ChannelRoute(this, this.config), new ConfigRoute(this, this.config), new LoginRoute(this, this.config));

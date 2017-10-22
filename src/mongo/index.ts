@@ -4,6 +4,8 @@ import { theTime } from "../util";
 
 import * as Mongo from "mongodb";
 
+const aguid = require("aguid");
+
 export class MongoHandler {
 
 	private connection: Mongo.Db;
@@ -176,7 +178,7 @@ export class MongoHandler {
 		const user: User = {
 			username,
 			deletedAt: null,
-			uuid: "",
+			uuid: aguid(),
 			passwordHash,
 			channels: [],
 			scopes,
