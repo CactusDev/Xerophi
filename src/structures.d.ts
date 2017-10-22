@@ -91,7 +91,8 @@ interface Quote {
 	quoteId: number;
 	channel: string;
 	quoted: string;
-	when: string;
+	createdAt: string;
+	deletedAt: string;
 	enabled: boolean;
 	count: number;
 	quote: Component[];

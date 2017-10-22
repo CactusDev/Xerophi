@@ -9,13 +9,22 @@ export class QuoteRoute extends AbstractEndpoint {
 	private controller = new QuoteController();
 
 	public async init() {
-		this.web.instance.route({
-			method: "GET",
-			path: "/{channel}/quote/{id}",
-			config: {
-				handler: (request, reply) => this.controller.getQuote(request, reply),
-				auth: false
+		this.web.instance.route([
+			{
+				method: "GET",
+				path: "/{channel}/quote/{id}",
+				config: {
+					handler: (request, reply) => this.controller.getQuote(request, reply),
+					auth: false
+				}
+			},
+			{
+				method: "PATCH",
+				path: "/{channel}/quote",
+				config: {
+					handler: (request, reply) => this.controller.createQuote(request, reply)
+				}
 			}
-		});
+		]);
 	}
 }
