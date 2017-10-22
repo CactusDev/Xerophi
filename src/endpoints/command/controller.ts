@@ -5,7 +5,7 @@ import { isValidRole } from "../../util";
 
 import { MongoHandler } from "../../mongo";
 
-const validEditable = ["enabled", "name", "response", "role", "service"];
+const validEditable = ["enabled", "name", "response", "role", "service", "count"];
 
 export class CommandController {
 

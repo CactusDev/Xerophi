@@ -97,6 +97,41 @@ export class MongoHandler {
 			dbCommand.restrictions[attribute] = value;
 			const result = await this.commands.updateOne({ channel, name: command }, dbCommand);
 			return result.matchedCount === 1;
+		} else if (attribute === "count") {
+			// Count is *super* special. We need to figure out what we're doing
+			const prefix = (<string>value).substring(0, 1);
+			const valueIsNum = !!+value;
+			const isNum = !!+prefix && valueIsNum;
+			const remaining = (<string>value).substring(1);
+			const remainingIsNum = !!+remaining;
+
+			if (isNum) {
+				// Setting
+				if (!valueIsNum) {
+					return true;
+				}
+				dbCommand.count = +value
+				const result = await this.commands.updateOne({ channel, name: command }, dbCommand);
+				return result.matchedCount === 1;
+			} else if (remainingIsNum) {
+				if (prefix === "+") {
+					// Adding to the count
+					if (!valueIsNum) {
+						return true;
+					}
+					dbCommand.count += +remaining
+					const result = await this.commands.updateOne({ channel, name: command }, dbCommand);
+					return result.matchedCount === 1;
+				} else if (prefix === "-") {
+					// Subtracting
+					if (!valueIsNum) {
+						return true;
+					}
+					dbCommand.count -= +remaining
+					const result = await this.commands.updateOne({ channel, name: command }, dbCommand);
+					return result.matchedCount === 1;
+				}
+			}
 		}
 		// Update the attribute
 		dbCommand[attribute] = value;
