@@ -7,6 +7,8 @@ import { AbstractEndpoint, CommandRoute, QuoteRoute, ChannelRoute, ConfigRoute, 
 import { Authorization } from "./authorization";
 import { MongoHandler } from "./mongo";
 
+import { fullRoles } from "./authorization/scopes";
+
 @Injectable()
 export class Web {
 	private _instance: Hapi.Server;
@@ -22,10 +24,13 @@ export class Web {
 		this.mongo = mongo;
 
 		console.log("Starting...");
-
 		const validate = (decoded: any, request: Hapi.Request, callback: any) => {
+			let scopes = decoded.scopes;
+			if (scopes.indexOf("admin:full") > -1) {
+				scopes = fullRoles;
+			}
 			// TODO: Create a better check here to make sure the user exists
-			Authorization.isValid(request.headers.authorization).then(valid => callback(null, valid, { scope: decoded.scopes }));
+			Authorization.isValid(request.headers.authorization).then(valid => callback(null, valid, { scope: scopes }));
 		};
 
 		this._instance = new Hapi.Server();

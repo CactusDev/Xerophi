@@ -6,6 +6,7 @@ const argon2 = require("argon2");
 const aguid = require("aguid");
 
 import { Authorization } from "../../authorization";
+import { defaultScopes } from "../../authorization/scopes";
 
 const logins: any = {
 	"0x01": "$argon2i$v=19$m=4096,t=3,p=1$2WC62WsiICG2rnfToHtPpw$Kpf6d2N+qLmhCJgZKYSUn1hDMIwUUbejzGpkcPGNKwE"
@@ -13,14 +14,7 @@ const logins: any = {
 
 // @Temp
 const userScopes: {[name: string]: string[]} = {
-	"0x01": [
-		"user:basic:auth",
-		"user:command:create",
-		"user:command:delete",
-		"user:command:edit",
-		"user:quote:create",
-		"user:quote:delete"
-	],
+	"0x01": defaultScopes,
 	test: [
 		"admin:full"
 	]
