@@ -2,7 +2,9 @@
 import { Config } from "./config";
 import * as Hapi from "hapi";
 import { Injectable } from "@angular/core";
-import { AbstractEndpoint, CommandRoute, QuoteRoute, ChannelRoute, ConfigRoute } from "./endpoints";
+import { AbstractEndpoint, CommandRoute, QuoteRoute, ChannelRoute, ConfigRoute, LoginRoute } from "./endpoints";
+
+import { Authorization } from "./authorization";
 
 const users: any = {
 	1: {
@@ -26,10 +28,7 @@ export class Web {
 
 		const validate = (decoded: any, request: Hapi.Request, callback: any) => {
 			// TODO: Create a better check here to make sure the user exists
-			if (!users[decoded.id]) {
-				return callback(null, false);
-			}
-			return callback(null, true);
+			Authorization.isValid(request.headers.authorization).then(valid => callback(null, valid));
 		};
 
 		this._instance = new Hapi.Server();
@@ -58,9 +57,28 @@ export class Web {
 
 			this._instance.auth.default("jwt");
 
+			this._instance.route([
+				{
+					method: "GET",
+					path: "/",
+					config: {
+						auth: false
+					},
+					handler: (request, reply) => reply({a: "thing"})
+				},
+				{
+					method: "GET",
+					path: "/a",
+					config: {
+						auth: "jwt"
+					},
+					handler: (request, reply) => reply({b: "stuff"})
+				}
+			]);
+
 			console.log("Creating endpoints...");
 			this.endpoints.push(new CommandRoute(this, this.config), new QuoteRoute(this, this.config),
-				new ChannelRoute(this, this.config), new ConfigRoute(this, this.config));
+				new ChannelRoute(this, this.config), new ConfigRoute(this, this.config), new LoginRoute(this, this.config));
 			console.log("Done!");
 
 			console.log("Initializing endpoints...");

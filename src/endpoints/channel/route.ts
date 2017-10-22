@@ -13,7 +13,8 @@ export class ChannelRoute extends AbstractEndpoint {
 			method: "GET",
 			path: "/channel/{channel}",
 			config: {
-				handler: (request, reply) => this.controller.getChannel(request, reply)
+				handler: (request, reply) => this.controller.getChannel(request, reply),
+				auth: "jwt"
 			}
 		});
 
@@ -21,7 +22,8 @@ export class ChannelRoute extends AbstractEndpoint {
 			method: "GET",
 			path: "/channel/{channel}/{service}",
 			config: {
-				handler: (request, reply) => this.controller.getChannel(request, reply)	
+				handler: (request, reply) => this.controller.getChannel(request, reply),
+				auth: "jwt"
 			}
 		});
 	}

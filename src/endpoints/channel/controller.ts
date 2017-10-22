@@ -9,7 +9,7 @@ export class ChannelController {
 		const service = request.params["service"];
 
 		// TODO: Make this actually pull from a database and display information
-		reply(!!service ? this.hasService(channel, service) : this.noService(channel));
+		reply(!!service ? this.hasService(channel, service) : this.noService(channel)).header("Authorization", request.headers.authorization);
 	}
 
 	private hasService(channel: string, service: string): Channel {
