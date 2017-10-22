@@ -5,6 +5,8 @@ import { isValidRole } from "../../util";
 
 import { MongoHandler } from "../../mongo";
 
+const validEditable = ["enabled", "name", "response", "role", "service"];
+
 export class CommandController {
 
 	constructor(private mongo: MongoHandler) {
@@ -60,30 +62,18 @@ export class CommandController {
 		const channel = request.params["channel"];
 		const command = request.params["command"];
 		
-		if (!request.payload || !(request.payload.role ||
-			request.payload.response || request.payload.name || request.payload.enabled)) {
-			return reply(Boom.badData("Must supply something to update."));
-		}
-
-		let updated = false;
-		// Since we have all the data, we just need to actually update the attributes.
-		if (request.payload.role) {
-			// Validate the role
-			if (!isValidRole(request.payload.role)) {
-				return reply(Boom.badData("Invalid role"));
+		for (let key of Object.keys(request.payload)) {
+			const index = validEditable.indexOf(key);
+			if (index == -1) {
+				return reply(Boom.badData("Invalid attribute"));
 			}
-			updated = await this.mongo.commandEditRestrict(request.payload.role, command, channel);			
-		} else if (request.payload.response) {
-			updated = await this.mongo.commandEditResponse(request.payload.response, command, channel);
-		} else if (request.payload.name) {
-			updated = await this.mongo.commandEditName(request.payload.name, command, channel);
-		} else if (request.payload.enabled) {
-			updated = await this.mongo.commandEditEnabled(request.payload.enabled, command, channel);
-		} else {
-			return reply(Boom.badData("Invalid attribute"));
-		}
-		if (!updated) {
-			return reply(Boom.notFound("Invalid command."));
+
+			const type = validEditable[index];
+			const updated = await this.mongo.editCommandAttribute(key, request.payload[key], command, channel);
+
+			if (!updated) {
+				return reply(Boom.notFound("Invalid command."));
+			}
 		}
 		return reply({}).code(204);
 	}

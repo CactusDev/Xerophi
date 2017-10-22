@@ -86,50 +86,20 @@ export class MongoHandler {
 		return true;
 	}
 
-	public async commandEditRestrict(role: string, command: string, channel: string): Promise<boolean> {
+	public async editCommandAttribute(attribute: string, value: any, command: string, channel: string): Promise<boolean> {
 		// Make sure the command exists
-		const dbCommand = await this.getCommand(channel, command);
+		const dbCommand: any = await this.getCommand(channel, command);
 		if (!dbCommand) {
 			return false;
 		}
-		// Update the attribute
-		dbCommand.restrictions.role = role;
-		const result = await this.commands.updateOne({ channel, name: command }, dbCommand);
-		return result.matchedCount === 1;
-	}
-
-	public async commandEditResponse(response: CactusMessagePacket[], command: string, channel: string): Promise<boolean> {
-		// Make sure the command exists
-		const dbCommand = await this.getCommand(channel, command);
-		if (!dbCommand) {
-			return false;
+		// Check if it's the special types
+		if (attribute === "role" || attribute === "service") {
+			dbCommand.restrictions[attribute] = value;
+			const result = await this.commands.updateOne({ channel, name: command }, dbCommand);
+			return result.matchedCount === 1;
 		}
 		// Update the attribute
-		dbCommand.response = response;
-		const result = await this.commands.updateOne({ channel, name: command }, dbCommand);
-		return result.matchedCount === 1;
-	}
-
-	public async commandEditName(newName: string, command: string, channel: string): Promise<boolean> {
-		// Make sure the command exists
-		const dbCommand = await this.getCommand(channel, command);
-		if (!dbCommand) {
-			return false;
-		}
-		// Update the attribute
-		dbCommand.name = newName;
-		const result = await this.commands.updateOne({ channel, name: command }, dbCommand);
-		return result.matchedCount === 1;
-	}
-
-	public async commandEditEnabled(enabled: boolean, command: string, channel: string): Promise<boolean> {
-		// Make sure the command exists
-		const dbCommand = await this.getCommand(channel, command);
-		if (!dbCommand) {
-			return false;
-		}
-		// Update the attribute
-		dbCommand.enabled = enabled;
+		dbCommand[attribute] = value;
 		const result = await this.commands.updateOne({ channel, name: command }, dbCommand);
 		return result.matchedCount === 1;
 	}
