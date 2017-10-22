@@ -80,7 +80,10 @@ export class QuoteController {
 		await this.mongo.createQuote(quote)
 
 		delete quote.deletedAt;
-		reply(quote);
+		return reply({
+			created: true,
+			name
+		}).code(201);
 	}
 
 	public async deleteQuote(request: Hapi.Request, reply: Hapi.ReplyNoContinue) {
