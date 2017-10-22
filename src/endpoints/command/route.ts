@@ -27,5 +27,13 @@ export class CommandRoute extends AbstractEndpoint {
 				handler: (request, reply) => this.controller.createCommand(request, reply)
 			}
 		});
+
+		this.web.instance.route({
+			method: "PATCH",
+			path: "/{channel}/command/{command}",
+			config: {
+				handler: (request, reply) => this.controller.updateCommand(request, reply)
+			}
+		});
 	}
 }

@@ -49,4 +49,33 @@ export class CommandController {
 			name
 		}).code(201);
 	}
+
+	public async updateCommand(request: Hapi.Request, reply: Hapi.ReplyNoContinue) {
+		const channel = request.params["channel"];
+		const command = request.params["command"];
+		
+		if (!request.payload || !(request.payload.role || request.payload.response || request.payload.name)) {
+			return reply(Boom.badData("Must supply something to update."));
+		}
+
+		let updated = false;
+		// Since we have all the data, we just need to actually update the attributes.
+		if (request.payload.role) {
+			// Validate the role
+			if (!isValidRole(request.payload.role)) {
+				return reply(Boom.badData("Invalid role"));
+			}
+			updated = await this.mongo.commandEditRestrict(request.payload.role, command, channel);			
+		} else if (request.payload.response) {
+			updated = await this.mongo.commandEditResponse(request.payload.response, command, channel);
+		} else if (request.payload.name) {
+			updated = await this.mongo.commandEditName(request.payload.name, command, channel);
+		} else {
+			return reply(Boom.badData("Invalid attribute"));
+		}
+		if (!updated) {
+			return reply(Boom.notFound("Invalid command."));
+		}
+		return reply({}).code(204);
+	}
 }

@@ -85,4 +85,40 @@ export class MongoHandler {
 		this.commands.insertOne(command);
 		return true;
 	}
+
+	public async commandEditRestrict(role: string, command: string, channel: string): Promise<boolean> {
+		// Make sure the command exists
+		const dbCommand = await this.getCommand(channel, command);
+		if (!dbCommand) {
+			return false;
+		}
+		// Update the attribute
+		dbCommand.restrictions.role = role;
+		const result = await this.commands.updateOne({ channel, name: command }, dbCommand);
+		return result.matchedCount === 1;
+	}
+
+	public async commandEditResponse(response: CactusMessagePacket[], command: string, channel: string): Promise<boolean> {
+		// Make sure the command exists
+		const dbCommand = await this.getCommand(channel, command);
+		if (!dbCommand) {
+			return false;
+		}
+		// Update the attribute
+		dbCommand.response = response;
+		const result = await this.commands.updateOne({ channel, name: command }, dbCommand);
+		return result.matchedCount === 1;
+	}
+
+	public async commandEditName(newName: string, command: string, channel: string): Promise<boolean> {
+		// Make sure the command exists
+		const dbCommand = await this.getCommand(channel, command);
+		if (!dbCommand) {
+			return false;
+		}
+		// Update the attribute
+		dbCommand.name = newName;
+		const result = await this.commands.updateOne({ channel, name: command }, dbCommand);
+		return result.matchedCount === 1;
+	}
 }
