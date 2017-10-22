@@ -24,14 +24,24 @@ export class QuoteController {
 			const random = !!request.payload && !!request.payload.random || false;
 			const response = await this.mongo.getQuote(channel, random, id);
 			if (!response || response.deletedAt) {
-				return reply(Boom.notFound());
+				return reply(Boom.notFound("Invalid quote"));
 			}
 			delete response.deletedAt;
-			return reply(response);
+			if (!response.deletedAt && response.enabled) {
+				return reply(response);
+			}
+			return reply(Boom.notFound("Invalid quote"));
 		} else {
 			const response = await this.mongo.getAllQuotes(channel);
 			for (let quote of response) {
-				delete quote.deletedAt;
+				if (quote.deletedAt) {
+					const index = response.indexOf(quote);
+					if (index !== -1) {
+						response.splice(index, 1);
+					}
+				} else {
+					delete quote.deletedAt;					
+				}
 			}
 			return reply(response);
 		}
@@ -60,5 +70,19 @@ export class QuoteController {
 
 		delete quote.deletedAt;
 		reply(quote);
+	}
+
+	public async deleteQuote(request: Hapi.Request, reply: Hapi.ReplyNoContinue) {
+		const channel = request.params.channel;
+		const quoteId = +request.params.id;
+		if (!quoteId) {
+			return reply(Boom.badData("Quote id must be a number."));
+		}
+
+		const deleted = await this.mongo.softDeleteQuote(quoteId, channel);
+		if (!deleted) {
+			return reply(Boom.notFound("Invalid quote"));
+		}
+		return reply({}).code(204);
 	}
 }

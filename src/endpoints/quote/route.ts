@@ -29,10 +29,17 @@ export class QuoteRoute extends AbstractEndpoint {
 				}
 			},
 			{
-				method: "PATCH",
+				method: "POST",
 				path: "/{channel}/quote",
 				config: {
 					handler: (request, reply) => this.controller.createQuote(request, reply)
+				}
+			},
+			{
+				method: "DELETE",
+				path: "/{channel}/quote/{id}",
+				config: {
+					handler: (request, reply) => this.controller.deleteQuote(request, reply)
 				}
 			}
 		]);

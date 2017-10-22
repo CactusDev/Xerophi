@@ -151,4 +151,15 @@ export class MongoHandler {
 		const result = await this.commands.updateOne({ channel, name }, command);
 		return result.matchedCount === 1;
 	}
+
+	public async softDeleteQuote(id: number, channel: string): Promise<boolean> {
+		const quote = await this.getQuote(channel, false, id);
+		if (!quote || quote.deletedAt) {
+			return false;
+		}
+		quote.deletedAt = theTime();
+		quote.enabled = false;
+		const result = await this.quotes.updateOne({ channel, quoteId: id }, quote);
+		return result.matchedCount === 1;
+	}
 }
