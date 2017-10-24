@@ -13,7 +13,7 @@ export class ConfigRoute extends AbstractEndpoint {
 			method: "GET",
 			path: "/channel/{channel}/config",
 			config: {
-				handler: (request, reply) => this.controller.getConfig(request, reply),
+				handler: this.controller.getConfig,
 				auth: false
 			}
 		});

@@ -18,7 +18,7 @@ export class ChannelRoute extends AbstractEndpoint {
 				method: "GET",
 				path: "/channel/{channel}",
 				config: {
-					handler: (request, reply) => this.controller.getChannel(request, reply),
+					handler: this.controller.getChannel,
 					auth: false
 				}
 			},
@@ -26,7 +26,7 @@ export class ChannelRoute extends AbstractEndpoint {
 				method: "GET",
 				path: "/channel/{channel}/{service}",
 				config: {
-					handler: (request, reply) => this.controller.getService(request, reply),
+					handler: this.controller.getService,
 					auth: false
 				}
 			},
@@ -34,7 +34,7 @@ export class ChannelRoute extends AbstractEndpoint {
 				method: "POST",
 				path: "/channel/{channel}",
 				config: {
-					handler: (request, reply) => this.controller.createUser(request, reply),
+					handler: this.controller.createUser,
 					auth: {
 						scope: ADD_USER
 					}
@@ -44,7 +44,7 @@ export class ChannelRoute extends AbstractEndpoint {
 				method: "DELETE",
 				path: "/channel/{channel}",
 				config: {
-					handler: (request, reply) => this.controller.removeUser(request, reply),
+					handler: this.controller.removeUser,
 					auth: {
 						scope: REMOVE_USER
 					}
