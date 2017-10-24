@@ -4,8 +4,6 @@ import { AbstractEndpoint } from "..";
 import { Web } from "../../web";
 import { ChannelController } from "./controller";
 
-import { ADD_USER, REMOVE_USER } from "../../authorization/scopes";
-
 export class ChannelRoute extends AbstractEndpoint {
 
 	private controller: ChannelController;
@@ -18,7 +16,7 @@ export class ChannelRoute extends AbstractEndpoint {
 				method: "GET",
 				path: "/channel/{channel}",
 				config: {
-					handler: this.controller.getChannel,
+					handler: (request, reqly) => this.controller.getChannel(request, reply),
 					auth: false
 				}
 			},
@@ -26,28 +24,8 @@ export class ChannelRoute extends AbstractEndpoint {
 				method: "GET",
 				path: "/channel/{channel}/{service}",
 				config: {
-					handler: this.controller.getService,
+					handler: (request, reply) => this.controller.getService(request, reply),
 					auth: false
-				}
-			},
-			{
-				method: "POST",
-				path: "/channel/{channel}",
-				config: {
-					handler: this.controller.createUser,
-					auth: {
-						scope: ADD_USER
-					}
-				}
-			},
-			{
-				method: "DELETE",
-				path: "/channel/{channel}",
-				config: {
-					handler: this.controller.removeUser,
-					auth: {
-						scope: REMOVE_USER
-					}
 				}
 			}
 		]);

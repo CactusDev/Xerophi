@@ -7,7 +7,8 @@ const aguid = require("aguid");
 import { Authorization } from "../../authorization";
 import { defaultScopes } from "../../authorization/scopes";
 
-import { compare } from "../../util";
+import { compare, hash } from "../../util";
+import { MongoHandler } from "../../mongo";
 
 const logins: any = {
 	"0x01": "$argon2i$v=19$m=4096,t=3,p=1$2WC62WsiICG2rnfToHtPpw$Kpf6d2N+qLmhCJgZKYSUn1hDMIwUUbejzGpkcPGNKwE"
@@ -23,6 +24,9 @@ const userScopes: {[name: string]: string[]} = {
 
 
 export class UserController {
+
+	constructor(private mongo: MongoHandler) {
+	}
 
 	public async attemptLogin(request: Hapi.Request, reply: Hapi.ReplyNoContinue, key: string) {
 		const user = request.headers["user"];
@@ -47,5 +51,37 @@ export class UserController {
 		}
 		// Invalid login
 		reply(Boom.unauthorized());
+	}
+
+	public async createUser(request: Hapi.Request, reply: Hapi.ReplyNoContinue) {
+		if (!request.payload || !request.payload.password || !request.payload.username) {
+			return reply(Boom.badData("Must supply password"));
+		}
+
+		const scopes = !!request.payload.scopes ? request.payload.scopes : defaultScopes
+		const channel = request.payload.username;
+		const hashed = await hash(request.payload.password);
+
+		console.log(this.mongo);
+
+		const user = await this.mongo.createUser(channel, hashed, scopes);
+		if (!user) {
+			return reply(Boom.conflict("User already exists"));
+		}
+		return reply({
+			created: true,
+			scopes,
+			username: user.username
+		}).code(201);
+	}
+
+	public async removeUser(request: Hapi.Request, reply: Hapi.ReplyNoContinue) {
+		const channel = request.params.channel;
+
+		const deleted = await this.mongo.softDeleteUser(channel);
+		if (!deleted) {
+			return reply(Boom.notFound("Invalid user"));
+		}
+		return reply({}).code(204);
 	}
 }

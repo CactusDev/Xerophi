@@ -16,7 +16,7 @@ export class CommandRoute extends AbstractEndpoint {
 				method: "GET",
 				path: "/{channel}/command/{command}",
 				config: {
-					handler: this.controller.getCommand,
+					handler: (request, reply) => this.controller.getCommand(request, reply),
 					auth: false
 				}
 			},
@@ -24,21 +24,21 @@ export class CommandRoute extends AbstractEndpoint {
 				method: "POST",
 				path: "/{channel}/command/{command}",
 				config: {
-					handler: this.controller.createCommand
+					handler: (request, reply) => this.controller.createCommand(request, reply)
 				}
 			},
 			{
 				method: "PATCH",
 				path: "/{channel}/command/{command}",
 				config: {
-					handler: this.controller.updateCommand
+					handler: (request, reply) => this.controller.updateCommand(request, reply)
 				}
 			},
 			{
 				method: "DELETE",
 				path: "/{channel}/command/{command}",
 				config: {
-					handler: this.controller.softDeleteCommand
+					handler: (request, reply) => this.controller.softDeleteCommand(request, reply)
 				}
 			}
 		]);

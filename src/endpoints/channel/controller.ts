@@ -5,7 +5,6 @@ import * as Boom from "boom";
 import { MongoHandler } from "../../mongo";
 
 import { defaultScopes } from "../../authorization/scopes";
-import { hash } from "../../util";
 
 interface APIUser {
 	username: string;
@@ -65,36 +64,5 @@ export class ChannelController {
 		}
 
 		reply(dbChannel);
-	}
-
-	public async createUser(request: Hapi.Request, reply: Hapi.ReplyNoContinue) {
-		const channel = request.params.channel;
-
-		if (!request.payload || !request.payload.password) {
-			return reply(Boom.badData("Must supply password"));
-		}
-
-		const scopes = !!request.payload.scopes ? request.payload.scopes : defaultScopes
-		const hashed = await hash(request.payload.password);
-
-		const user = await this.mongo.createUser(channel, hashed, scopes);
-		if (!user) {
-			return reply(Boom.conflict("User already exists"));
-		}
-		return reply({
-			created: true,
-			scopes,
-			username: user.username
-		}).code(201);
-	}
-
-	public async removeUser(request: Hapi.Request, reply: Hapi.ReplyNoContinue) {
-		const channel = request.params.channel;
-
-		const deleted = await this.mongo.softDeleteUser(channel);
-		if (!deleted) {
-			return reply(Boom.notFound("Invalid user"));
-		}
-		return reply({}).code(204);
 	}
 }

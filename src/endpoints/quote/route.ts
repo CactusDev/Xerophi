@@ -16,7 +16,7 @@ export class QuoteRoute extends AbstractEndpoint {
 				method: "GET",
 				path: "/{channel}/quote/{id}",
 				config: {
-					handler: this.controller.getQuote,
+					handler: (request, reply) => this.controller.getQuote(request, reply),
 					auth: false
 				}
 			},
@@ -24,7 +24,7 @@ export class QuoteRoute extends AbstractEndpoint {
 				method: "GET",
 				path: "/{channel}/quote",
 				config: {
-					handler: this.controller.getQuote,
+					handler: (request, reply) => this.controller.getQuote(request. reply),
 					auth: false
 				}
 			},
@@ -32,7 +32,7 @@ export class QuoteRoute extends AbstractEndpoint {
 				method: "POST",
 				path: "/{channel}/quote",
 				config: {
-					handler: this.controller.createQuote,
+					handler: (request, reply) => this.controller.createQuote(request, reply),
 					auth: {
 						scope: ["user:quote:create"],
 					}
@@ -42,7 +42,7 @@ export class QuoteRoute extends AbstractEndpoint {
 				method: "DELETE",
 				path: "/{channel}/quote/{id}",
 				config: {
-					handler: this.controller.deleteQuote
+					handler: (request, reply) => this.controller.deleteQuote(request, reply)
 				}
 			}
 		]);
