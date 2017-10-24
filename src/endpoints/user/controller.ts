@@ -10,19 +10,6 @@ import { defaultScopes } from "../../authorization/scopes";
 import { compare, hash } from "../../util";
 import { MongoHandler } from "../../mongo";
 
-const logins: any = {
-	"0x01": "$argon2i$v=19$m=4096,t=3,p=1$2WC62WsiICG2rnfToHtPpw$Kpf6d2N+qLmhCJgZKYSUn1hDMIwUUbejzGpkcPGNKwE"
-}
-
-// @Temp
-const userScopes: {[name: string]: string[]} = {
-	"0x01": defaultScopes,
-	test: [
-		"admin:full"
-	]
-}
-
-
 export class UserController {
 
 	constructor(private mongo: MongoHandler) {
@@ -31,23 +18,25 @@ export class UserController {
 	public async attemptLogin(request: Hapi.Request, reply: Hapi.ReplyNoContinue, key: string) {
 		const user = request.headers["user"];
 		const password = request.headers["password"];
-		if (!logins[user]) {
-			return; // TODO: error here
+		
+		const dbUser = await this.mongo.getUser(user);
+
+		if (!dbUser) {
+			return reply(Boom.notFound("Invalid user"));
 		}
 
-		if (await compare(password, logins[user])) {
+		if (await compare(password, dbUser.passwordHash)) {
 			// Valid user, let them exist!
 			const session: any = {
 				valid: true,
 				id: aguid(),
-				scopes: userScopes[user],
+				scopes: dbUser.scopes,
 				exp: new Date().getTime() + 60 * 60 * 1000 // This will expire in one hour
 			};
-			reply({
+			return reply({
 				accepted: true,
 				jwt: await Authorization.give(session, key)
 			});
-			return;
 		}
 		// Invalid login
 		reply(Boom.unauthorized());
@@ -61,8 +50,6 @@ export class UserController {
 		const scopes = !!request.payload.scopes ? request.payload.scopes : defaultScopes
 		const channel = request.payload.username;
 		const hashed = await hash(request.payload.password);
-
-		console.log(this.mongo);
 
 		const user = await this.mongo.createUser(channel, hashed, scopes);
 		if (!user) {

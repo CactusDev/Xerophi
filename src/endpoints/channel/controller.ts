@@ -39,12 +39,9 @@ export class ChannelController {
 			return reply(Boom.notFound("Channel doesn't have service"));
 		}
 		// See if we have the service
-		dbChannel.channels.forEach(async serviceChannel => {
-			if (serviceChannel.service === service) {
-				// This is the channel we're looking for, remove all the special data
-				delete serviceChannel.auth;
-				reply(serviceChannel);
-			}
+		dbChannel.channels.filter(channel => channel.service === service).forEach(async serviceChannel => {
+			delete serviceChannel.auth;
+			return reply(serviceChannel);
 		});
 	}
 
