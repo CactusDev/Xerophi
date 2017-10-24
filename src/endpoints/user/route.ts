@@ -2,16 +2,16 @@
 import { Config } from "../../config";
 import { AbstractEndpoint } from "..";
 import { Web } from "../../web";
-import { LoginController } from "./controller";
+import { UserController } from "./controller";
 
-export class LoginRoute extends AbstractEndpoint {
+export class UserRoute extends AbstractEndpoint {
 
-	private controller = new LoginController();
+	private controller = new UserController();
 
 	public async init() {
 		this.web.instance.route({
 			method: "GET",
-			path: "/login",
+			path: "/users/login",
 			config: {
 				handler: (request, reply) => this.controller.attemptLogin(request, reply, this.config.authentication.secret),
 				auth: false

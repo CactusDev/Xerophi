@@ -22,7 +22,7 @@ const userScopes: {[name: string]: string[]} = {
 }
 
 
-export class LoginController {
+export class UserController {
 
 	public async attemptLogin(request: Hapi.Request, reply: Hapi.ReplyNoContinue, key: string) {
 		const user = request.headers["user"];

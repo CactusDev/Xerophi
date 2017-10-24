@@ -2,7 +2,7 @@
 import { Config } from "./config";
 import * as Hapi from "hapi";
 import { Injectable } from "@angular/core";
-import { AbstractEndpoint, CommandRoute, QuoteRoute, ChannelRoute, ConfigRoute, LoginRoute } from "./endpoints";
+import { AbstractEndpoint, CommandRoute, QuoteRoute, ChannelRoute, ConfigRoute, UserRoute } from "./endpoints";
 
 import { Authorization } from "./authorization";
 import { MongoHandler } from "./mongo";
@@ -63,7 +63,8 @@ export class Web {
 
 			console.log("Creating endpoints...");
 			this.endpoints.push(new CommandRoute(this, this.config), new QuoteRoute(this, this.config),
-				new ChannelRoute(this, this.config), new ConfigRoute(this, this.config), new LoginRoute(this, this.config));
+				new ChannelRoute(this, this.config), new ConfigRoute(this, this.config),
+				new UserRoute(this, this.config));
 			console.log("Done!");
 
 			console.log("Initializing endpoints...");
