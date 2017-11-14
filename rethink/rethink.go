@@ -1,6 +1,8 @@
 package rethink
 
-import r "gopkg.in/gorethink/gorethink.v3"
+import (
+	r "gopkg.in/gorethink/gorethink.v3"
+)
 
 // ConnectionOpts is what we need to connect to a RethinkDB server
 type ConnectionOpts struct {
@@ -30,6 +32,7 @@ type Database interface {
 	Create(table string, data map[string]interface{}) (interface{}, error)
 	Delete(table string, uid string) (interface{}, error)
 	Exists(table string, filter map[string]interface{}) (interface{}, error)
+	Status(table string) (interface{}, error)
 }
 
 // Connect connects you to Rethink
@@ -57,4 +60,21 @@ func (c *Connection) Close() error {
 	c.Session = nil
 
 	return nil
+}
+
+// Status returns status of the table specified
+func (c *Connection) Status(table string) ([]interface{}, error) {
+	var resp []interface{}
+
+	cursor, err := r.Table(table).Status().Run(c.Session)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cursor.All(&resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }

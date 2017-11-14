@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/CactusDev/Xerophi/command"
 	"github.com/CactusDev/Xerophi/rethink"
@@ -58,7 +59,7 @@ func main() {
 	}
 	err := rdbConn.Connect()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("RethinkDB Connection Failed! - ", err)
 	}
 
 	handlers := map[string]types.Handler{
@@ -71,12 +72,25 @@ func main() {
 	router := gin.Default()
 	api := router.Group("/api/v1")
 
+	// Intialize the monitoring/status system
+	monitor := rethink.Status{
+		Tables: map[string]struct{}{
+			"commands": struct{}{},
+		},
+		DBs: map[string]struct{}{
+			"cactus": struct{}{},
+		},
+		LastUpdated: time.Now(),
+	}
+
+	monitor.Monitor(&rdbConn)
+
+	api.GET("/status", monitor.APIStatusHandler)
+
 	for baseRoute, handler := range handlers {
 		group := api.Group(baseRoute)
 		generateRoutes(handler, group)
 	}
-
-	// TODO: Implement RethinkDB connection verification
 
 	router.Run(fmt.Sprintf(":%d", config.Server.Port))
 
