@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gopkg.in/go-playground/validator.v9"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 // MapStringToInterface converts map[string]string to a map[string]interface{}

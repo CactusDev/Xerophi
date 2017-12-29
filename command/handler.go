@@ -11,8 +11,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	log "github.com/Sirupsen/logrus"
 	mapstruct "github.com/mitchellh/mapstructure"
+	log "github.com/sirupsen/logrus"
 )
 
 // Command is the struct that implements the handler interface for the command resource

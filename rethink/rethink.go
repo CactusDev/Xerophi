@@ -1,7 +1,8 @@
 package rethink
 
 import (
-	r "gopkg.in/gorethink/gorethink.v3"
+	log "github.com/sirupsen/logrus"
+	r "gopkg.in/gorethink/gorethink.v4"
 )
 
 // ConnectionOpts is what we need to connect to a RethinkDB server
@@ -35,6 +36,16 @@ type Database interface {
 	Status(table string) (interface{}, error)
 }
 
+// Issue is the schema for any responses from RethinkDB will be in
+// for any active issues
+type Issue struct {
+	ID          string
+	Type        string
+	Critical    bool
+	Info        map[string]interface{}
+	Description string
+}
+
 // Connect connects you to Rethink
 func (c *Connection) Connect() error {
 	session, err := r.Connect(r.ConnectOpts{
@@ -63,18 +74,16 @@ func (c *Connection) Close() error {
 }
 
 // Status returns status of the table specified
-func (c *Connection) Status(table string) ([]interface{}, error) {
-	var resp []interface{}
+func (c *Connection) Status() ([]Issue, error) {
+	var issues []Issue
 
-	cursor, err := r.Table(table).Status().Run(c.Session)
+	// Retrieve everything from the current issues admin table
+	res, err := r.DB("rethinkdb").Table("current_issues").Run(c.Session)
 	if err != nil {
+		log.Error(err.Error())
 		return nil, err
 	}
+	res.All(&issues)
 
-	err = cursor.All(&resp)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+	return issues, nil
 }

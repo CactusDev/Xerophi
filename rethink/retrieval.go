@@ -1,6 +1,6 @@
 package rethink
 
-import r "gopkg.in/gorethink/gorethink.v3"
+import r "gopkg.in/gorethink/gorethink.v4"
 
 // GetSingle returns a single object from the current table via a filter key
 func (c *Connection) GetSingle(filter map[string]interface{}, table string) (interface{}, error) {

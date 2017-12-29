@@ -3,8 +3,8 @@ package rethink
 import (
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-	r "gopkg.in/gorethink/gorethink.v3"
+	log "github.com/sirupsen/logrus"
+	r "gopkg.in/gorethink/gorethink.v4"
 )
 
 // Update takes the table the record is in, the UUID of the record, and the data to update it with - then updates the record (°Д°）
