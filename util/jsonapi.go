@@ -38,8 +38,10 @@ func pullVals(ift reflect.Type, ifv reflect.Value) (map[string]interface{}, map[
 	var meta = make(map[string]interface{})
 	var recordType = ""
 	var id = ""
+	// Iterate over all the fields in the value
 	for i := 0; i < ift.NumField(); i++ {
 		var value interface{}
+		// Get the tags in array/slice form
 		split := GetTags(ift.Field(i))
 		if split == nil {
 			// It's an anonymous field, ignore it

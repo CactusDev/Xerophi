@@ -23,6 +23,30 @@ type Command struct {
 	ResponseSchema struct{}            // The schema that will sent in response
 }
 
+// ReturnOne retrieves a single record given the filter provided
+func (c *Command) ReturnOne(filter map[string]interface{}) (ResponseSchema, error) {
+	var response ResponseSchema
+	// Retrieve a single record from the DB based on the filter
+	fromDB, err := c.Conn.GetSingle(filter, c.Table)
+	if err != nil {
+		return response, err
+	}
+	// Was anything returned?
+	if fromDB == nil {
+		// Return nothing, it's not an error but there's nothing there
+		return response, nil
+	}
+
+	// Decode the response from the DB into the response schema object
+	if err = mapstruct.Decode(fromDB, &response); err != nil {
+		return response, err
+	}
+
+	// It has been successfully populated, set this to true
+	response.Populated = true
+	return response, nil
+}
+
 // Update handles the updating of a record if the record exists
 func (c *Command) Update(ctx *gin.Context) {
 	token := html.EscapeString(ctx.Param("token"))
@@ -103,31 +127,44 @@ func (c *Command) GetSingle(ctx *gin.Context) {
 	token := html.EscapeString(ctx.Param("token"))
 	name := html.EscapeString(ctx.Param("name"))
 	filter := map[string]interface{}{"token": token, "name": name}
-	fromDB, err := c.Conn.GetSingle(filter, c.Table)
-	if err != nil {
-		util.NiceError(ctx, err, http.StatusBadRequest)
-		return
-	}
-	if fromDB == nil {
-		ctx.JSON(http.StatusNotFound, gin.H{})
-		return
-	}
 
-	var response ResponseSchema
-	if err = mapstruct.Decode(fromDB, &response); err != nil {
+	res, err := c.ReturnOne(filter)
+	if err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, util.MarshalResponse(response))
+	var status int
+	if res.Populated {
+		status = http.StatusOK
+	} else {
+		status = http.StatusNotFound
+	}
+
+	ctx.JSON(status, util.MarshalResponse(res))
 }
 
 // Create creates a new record
 func (c *Command) Create(ctx *gin.Context) {
 	var vals ClientSchema
 
+	// Update the token and name values from the request
+	vals.Token = strings.ToLower(ctx.Param("token"))
+	vals.Name = ctx.Param("name")
+
+	// Check if it exists yet
+	filter := map[string]interface{}{"token": vals.Token, "name": vals.Name}
+	if res, _ := c.ReturnOne(filter); res.Populated {
+		// It exists already, error out, can't edit from this endpoint
+		ctx.AbortWithStatus(http.StatusConflict)
+		return
+	}
+
+	// Validate the data provided
+	// Bind the JSON values in the request to the ClientSchema object
 	err := ctx.Bind(&vals)
 
+	// Validate the JSON values binding
 	if err != nil {
 		switch err.(type) {
 		case *json.UnmarshalTypeError:
@@ -140,13 +177,9 @@ func (c *Command) Create(ctx *gin.Context) {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, err)
 		return
 	}
-	vals.Token = strings.ToLower(ctx.Param("token"))
-	vals.Name = ctx.Param("name")
-
-	log.Debugf("%+v", vals)
 
 	var toCreate map[string]interface{}
-
+	// Unmarshal the JSON data into the values we'll use to create the resource
 	if data, err := json.Marshal(vals); err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
 		return
@@ -154,15 +187,22 @@ func (c *Command) Create(ctx *gin.Context) {
 		json.Unmarshal(data, &toCreate)
 	}
 
-	log.Debugf("%+v", toCreate)
+	// Attempt to create the new resource and check if it errored at all
+	if data, err := c.Conn.Create(c.Table, toCreate); err != nil {
+		log.Debug(data)
+		util.NiceError(ctx, err, http.StatusBadRequest)
+		return
+	}
 
-	// if _, err := c.Conn.Create(c.Table, toCreate); err != nil {
-	// 	util.NiceError(ctx, err, http.StatusBadRequest)
-	// 	return
-	// }
+	// Retrieve the newly created record
+	res, err := c.ReturnOne(filter)
+	if err != nil {
+		util.NiceError(ctx, err, http.StatusInternalServerError)
+		return
+	}
 
-	// Pass control off to GetSingle since we don't want to duplicate logic
-	c.GetSingle(ctx)
+	// Aaaand success
+	ctx.JSON(http.StatusCreated, util.MarshalResponse(res))
 }
 
 // Delete removes a record

@@ -84,7 +84,6 @@ func main() {
 	}
 
 	monitor.Monitor(&rdbConn)
-
 	api.GET("/status", monitor.APIStatusHandler)
 
 	for baseRoute, handler := range handlers {

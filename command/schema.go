@@ -2,10 +2,9 @@ package command
 
 import (
 	"github.com/CactusDev/Xerophi/schemas"
+	"github.com/CactusDev/Xerophi/types"
 	"github.com/CactusDev/Xerophi/util"
 )
-
-type meta map[string]interface{}
 
 // ResponseSchema is the schema for the data that will be sent out to the client
 type ResponseSchema struct {
@@ -17,10 +16,12 @@ type ResponseSchema struct {
 	Name      string                  `jsonapi:"attr,name"`
 	Response  EmbeddedResponseSchema  `jsonapi:"attr,response"`
 	Token     string                  `jsonapi:"meta,token"`
+	Populated bool
 }
 
-func (rs ResponseSchema) JSONAPIMeta() *meta {
-	return &meta{
+// JSONAPIMeta returns a meta object for the response
+func (rs ResponseSchema) JSONAPIMeta() *types.Meta {
+	return &types.Meta{
 		"createdAt": rs.CreatedAt,
 		"token":     rs.Token,
 	}
@@ -32,7 +33,7 @@ type ClientSchema struct {
 	Enabled   bool                    `json:"enabled" validate:"required"`
 	Response  EmbeddedResponseSchema  `json:"response" validate:"required"`
 	// Ignore these fields in user input, they will be filled automatically by the API
-	ID        string `json:"id" validate:"-"`
+	ID        string `json:"-" validate:"-"`
 	Count     int    `json:"count" validate:"-"`
 	CreatedAt string `json:"createdAt" validate:"-"`
 	Token     string `json:"token" validate:"-"`
@@ -49,8 +50,8 @@ type EmbeddedResponseSchema struct {
 }
 
 // GetAPITag allows each of these types to implement the JSONAPISchema interface
-func (r ResponseSchema) GetAPITag(lookup string) string {
-	return util.FieldTag(r, lookup, "jsonapi")
+func (rs ResponseSchema) GetAPITag(lookup string) string {
+	return util.FieldTag(rs, lookup, "jsonapi")
 }
 
 // GetAPITag allows each of these types to implement the JSONAPISchema interface
