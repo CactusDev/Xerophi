@@ -5,6 +5,7 @@ import (
 	"html"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/CactusDev/Xerophi/rethink"
 	"github.com/CactusDev/Xerophi/util"
@@ -26,6 +27,7 @@ type Command struct {
 // ReturnOne retrieves a single record given the filter provided
 func (c *Command) ReturnOne(filter map[string]interface{}) (ResponseSchema, error) {
 	var response ResponseSchema
+
 	// Retrieve a single record from the DB based on the filter
 	fromDB, err := c.Conn.GetSingle(filter, c.Table)
 	if err != nil {
@@ -146,19 +148,27 @@ func (c *Command) GetSingle(ctx *gin.Context) {
 
 // Create creates a new record
 func (c *Command) Create(ctx *gin.Context) {
-	var vals ClientSchema
+	// Declare default values
+	vals := ClientSchema{
+		Enabled: true,
+	}
+	createVals := CreationSchema{
+		CreatedAt: time.Now().UTC(),
+	}
 
 	// Update the token and name values from the request
-	vals.Token = strings.ToLower(ctx.Param("token"))
-	vals.Name = ctx.Param("name")
+	createVals.Token = strings.ToLower(ctx.Param("token"))
+	createVals.Name = ctx.Param("name")
+	// Get the JSON values
+	createVals.ClientSchema = vals
 
 	// Check if it exists yet
-	filter := map[string]interface{}{"token": vals.Token, "name": vals.Name}
-	// if res, _ := c.ReturnOne(filter); res.Populated {
-	// 	// It exists already, error out, can't edit from this endpoint
-	// 	ctx.AbortWithStatus(http.StatusConflict)
-	// 	return
-	// }
+	filter := map[string]interface{}{"token": createVals.Token, "name": createVals.Name}
+	if res, _ := c.ReturnOne(filter); res.Populated {
+		// It exists already, error out, can't edit from this endpoint
+		ctx.AbortWithStatusJSON(http.StatusConflict, util.MarshalResponse(res))
+		return
+	}
 
 	// Validate the data provided
 	// Bind the JSON values in the request to the ClientSchema object
@@ -186,11 +196,9 @@ func (c *Command) Create(ctx *gin.Context) {
 		return
 	}
 
-	// Validate the values
-
 	var toCreate map[string]interface{}
 	// Unmarshal the JSON data into the values we'll use to create the resource
-	if data, err := json.Marshal(vals); err != nil {
+	if data, err := json.Marshal(createVals); err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
 		return
 	} else {
@@ -198,8 +206,7 @@ func (c *Command) Create(ctx *gin.Context) {
 	}
 
 	// Attempt to create the new resource and check if it errored at all
-	if data, err := c.Conn.Create(c.Table, toCreate); err != nil {
-		log.Debug(data)
+	if _, err := c.Conn.Create(c.Table, toCreate); err != nil {
 		util.NiceError(ctx, err, http.StatusBadRequest)
 		return
 	}
