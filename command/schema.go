@@ -29,22 +29,22 @@ func (rs ResponseSchema) JSONAPIMeta() *types.Meta {
 
 // ClientSchema is the schema the data from the client will be marshalled into
 type ClientSchema struct {
-	Arguments []schemas.MessagePacket `json:"arguments" validate:"required"`
-	Enabled   bool                    `json:"enabled" validate:"required"`
-	Response  EmbeddedResponseSchema  `json:"response" validate:"required"`
+	Arguments []schemas.MessagePacket `json:"arguments" binding:"required"`
+	Enabled   bool                    `json:"enabled" binding:"required"`
+	Response  EmbeddedResponseSchema  `json:"response" binding:"required"`
 	// Ignore these fields in user input, they will be filled automatically by the API
-	ID        string `json:"-" validate:"-"`
-	Count     int    `json:"count" validate:"-"`
-	CreatedAt string `json:"createdAt" validate:"-"`
-	Token     string `json:"token" validate:"-"`
-	Name      string `json:"name" validate:"-"`
+	ID        string `json:"id" binding:"-"`
+	Count     int    `json:"count" binding:"-"`
+	CreatedAt string `json:"createdAt" binding:"-"`
+	Token     string `json:"token" binding:"-"`
+	Name      string `json:"name" binding:"-"`
 }
 
 // EmbeddedResponseSchema is the schema that is stored under the response key in ResponseSchema
 type EmbeddedResponseSchema struct {
-	Action  bool                    `jsonapi:"attr,action" validate:"required"`
-	Message []schemas.MessagePacket `jsonapi:"attr,message" validate:"required,gt=0"`
-	Role    int                     `jsonapi:"attr,role" validate:"gte=0,lte=256"`
+	Action  bool                    `jsonapi:"attr,action" binding:"required"`
+	Message []schemas.MessagePacket `jsonapi:"attr,message" binding:"required,gt=0"`
+	Role    int                     `jsonapi:"attr,role" binding:"gte=0,lte=256"`
 	Target  string                  `jsonapi:"attr,target"`
 	User    string                  `jsonapi:"attr,user"`
 }

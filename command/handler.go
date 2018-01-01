@@ -154,11 +154,11 @@ func (c *Command) Create(ctx *gin.Context) {
 
 	// Check if it exists yet
 	filter := map[string]interface{}{"token": vals.Token, "name": vals.Name}
-	if res, _ := c.ReturnOne(filter); res.Populated {
-		// It exists already, error out, can't edit from this endpoint
-		ctx.AbortWithStatus(http.StatusConflict)
-		return
-	}
+	// if res, _ := c.ReturnOne(filter); res.Populated {
+	// 	// It exists already, error out, can't edit from this endpoint
+	// 	ctx.AbortWithStatus(http.StatusConflict)
+	// 	return
+	// }
 
 	// Validate the data provided
 	// Bind the JSON values in the request to the ClientSchema object
@@ -166,6 +166,14 @@ func (c *Command) Create(ctx *gin.Context) {
 
 	// Validate the JSON values binding
 	if err != nil {
+		// Check if it's a validation error and if so convert to a human-readable
+		// error message
+		resp, convErr := util.ConvertToError(err)
+		// convErr is nil so we have an error that needs to be returned to the user
+		if convErr == nil {
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, resp)
+			return
+		}
 		switch err.(type) {
 		case *json.UnmarshalTypeError:
 			ve, ok := err.(*json.UnmarshalTypeError)
@@ -177,6 +185,8 @@ func (c *Command) Create(ctx *gin.Context) {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, err)
 		return
 	}
+
+	// Validate the values
 
 	var toCreate map[string]interface{}
 	// Unmarshal the JSON data into the values we'll use to create the resource
