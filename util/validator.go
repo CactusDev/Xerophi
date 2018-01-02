@@ -1,8 +1,11 @@
 package util
 
 import (
+	"encoding/json"
+	"fmt"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	validator "gopkg.in/go-playground/validator.v8"
 )
 
@@ -22,22 +25,34 @@ func convertNamespace(namespace string) []string {
 
 // ConvertToError converts the error given to a key paired value
 // that's human-readable. Returns a nil error object if it was successful
-func ConvertToError(errors error) (APIError, error) {
+func ConvertToError(err error) (APIError, error) {
 	response := APIError{}
 
-	if _, ok := errors.(validator.ValidationErrors); !ok {
-		return nil, errors
-	}
-
-	for _, err := range errors.(validator.ValidationErrors) {
-		curErr := APIError{}
-		curErr["raw"] = err
-		curErr["field"] = convertNamespace(err.NameNamespace)
-		switch err.Tag {
-		case "required":
-			curErr["error"] = "Required field not included"
+	switch err.(type) {
+	case *json.UnmarshalTypeError:
+		ve, ok := err.(*json.UnmarshalTypeError)
+		if !ok {
+			log.Error("SPLODEY NOT OKAY!")
 		}
-		response[strings.ToLower(err.Field)] = curErr
+		curErr := APIError{}
+		curErr["raw"] = ve
+		curErr["field"] = convertNamespace(ve.Field)
+		curErr["error"] = fmt.Sprintf("Invalid type %s for field %s, require %s.",
+			ve.Value, ve.Field, ve.Type.String())
+
+		response[strings.ToLower(ve.Field)] = curErr
+
+	case validator.ValidationErrors:
+		for _, err := range err.(validator.ValidationErrors) {
+			curErr := APIError{}
+			curErr["raw"] = err
+			curErr["field"] = convertNamespace(err.NameNamespace)
+			switch err.Tag {
+			case "required":
+				curErr["error"] = "Required field not included"
+			}
+			response[strings.ToLower(err.Field)] = curErr
+		}
 	}
 
 	return response, nil

@@ -184,16 +184,6 @@ func (c *Command) Create(ctx *gin.Context) {
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, resp)
 			return
 		}
-		switch err.(type) {
-		case *json.UnmarshalTypeError:
-			ve, ok := err.(*json.UnmarshalTypeError)
-			if !ok {
-				log.Error("SPLODEY NOT OKAY!")
-			}
-			log.Warn("ve:\t", ve.Field)
-		}
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, err)
-		return
 	}
 
 	var toCreate map[string]interface{}
