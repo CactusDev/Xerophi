@@ -31,26 +31,26 @@ func (rs ResponseSchema) JSONAPIMeta() *types.Meta {
 
 // ClientSchema is the schema the data from the client will be marshalled into
 type ClientSchema struct {
-	Arguments []schemas.MessagePacket `json:"arguments" binding:"required"`
-	Enabled   bool                    `json:"enabled" binding:"omitempty"`
-	Response  EmbeddedResponseSchema  `json:"response" binding:"required"`
+	Arguments []schemas.MessagePacket `json:"arguments"`
+	Enabled   bool                    `json:"enabled"`
+	Response  EmbeddedResponseSchema  `json:"response"`
 }
 
 // CreationSchema is all the data required for a new command to be created
 type CreationSchema struct {
-	ClientSchema `binding:"required"`
+	ClientSchema
 	// Ignore these fields in user input, they will be filled automatically by the API
-	Count     int       `json:"count" binding:"-"`
-	CreatedAt time.Time `json:"createdAt" binding:"-"`
-	Token     string    `json:"token" binding:"-"`
-	Name      string    `json:"name" binding:"-"`
+	Count     int       `json:"count"`
+	CreatedAt time.Time `json:"createdAt"`
+	Token     string    `json:"token"`
+	Name      string    `json:"name"`
 }
 
 // EmbeddedResponseSchema is the schema that is stored under the response key in ResponseSchema
 type EmbeddedResponseSchema struct {
-	Action  bool                    `json:"action" jsonapi:"attr,action" binding:"exists"`
-	Message []schemas.MessagePacket `json:"message" jsonapi:"attr,message" binding:"required,gt=0"`
-	Role    int                     `json:"role" jsonapi:"attr,role" binding:"gte=0,lte=256"`
+	Action  bool                    `json:"action" jsonapi:"attr,action"`
+	Message []schemas.MessagePacket `json:"message" jsonapi:"attr,message"`
+	Role    int                     `json:"role" jsonapi:"attr,role"`
 	Target  string                  `json:"target" jsonapi:"attr,target"`
 	User    string                  `json:"user" jsonapi:"attr,user"`
 }

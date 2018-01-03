@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "definitions": {
+    "embeddedResponse": {
+      "type": "object",
+      "required": [ "action", "message" ],
+      "properties": {
+        "action": { "type": "boolean" },
+        "message": {
+          "type": "array",
+          "items": {
+            "$ref": "../base.json#definitions/messagePacket"
+          }
+        },
+        "role": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 256
+        },
+        "target": { "type": "string" },
+        "user": { "type": "string" }
+      }
+    }
+  },
+  "properties": {
+    "embeddedResponse": { "$ref": "#definitions/embeddedResponse" }
+  }
+}

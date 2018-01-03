@@ -3,6 +3,7 @@ package command
 import (
 	"encoding/json"
 	"html"
+	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -15,6 +16,8 @@ import (
 	mapstruct "github.com/mitchellh/mapstructure"
 	log "github.com/sirupsen/logrus"
 )
+
+var schema = "command/commandSchema.json"
 
 // Command is the struct that implements the handler interface for the command resource
 type Command struct {
@@ -164,21 +167,23 @@ func (c *Command) Create(ctx *gin.Context) {
 
 	// Check if it exists yet
 	filter := map[string]interface{}{"token": createVals.Token, "name": createVals.Name}
-	if res, _ := c.ReturnOne(filter); res.Populated {
-		// It exists already, error out, can't edit from this endpoint
-		ctx.AbortWithStatusJSON(http.StatusConflict, util.MarshalResponse(res))
-		return
-	}
+	// if res, _ := c.ReturnOne(filter); res.Populated {
+	// 	// It exists already, error out, can't edit from this endpoint
+	// 	ctx.AbortWithStatusJSON(http.StatusConflict, util.MarshalResponse(res))
+	// 	return
+	// }
 
 	// Validate the data provided
+	str, _ := ioutil.ReadAll(ctx.Request.Body)
 	// Bind the JSON values in the request to the ClientSchema object
-	err := ctx.Bind(&vals)
-
+	err := ctx.BindJSON(&vals)
+	// We can continue validating the input so as to get both syntax and schema
+	// errors
 	// Validate the JSON values binding
 	if err != nil {
 		// Check if it's a validation error and if so convert to a human-readable
 		// error message
-		resp, convErr := util.ConvertToError(err)
+		resp, convErr := util.ValidateInput(string(str), schema)
 		// convErr is nil so we have an error that needs to be returned to the user
 		if convErr == nil {
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, resp)
