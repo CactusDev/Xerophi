@@ -1,5 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "file:///home/nate/go/src/github.com/CactusDev/Xerophi/command/definitions.json",
   "definitions": {
     "embeddedResponse": {
       "type": "object",
@@ -9,7 +10,7 @@
         "message": {
           "type": "array",
           "items": {
-            "$ref": "../base.json#definitions/messagePacket"
+            "$ref": "../base.json#/definitions/messagePacket"
           }
         },
         "role": {
@@ -21,8 +22,5 @@
         "user": { "type": "string" }
       }
     }
-  },
-  "properties": {
-    "embeddedResponse": { "$ref": "#definitions/embeddedResponse" }
   }
 }

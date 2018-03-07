@@ -1,5 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "file:///home/nate/go/src/github.com/CactusDev/Xerophi/command/commandSchema.json",
   "description": "The creation schema for the command endpoint",
   "type": "object",
   "required": [ "arguments", "response" ],
@@ -7,15 +8,13 @@
     "arguments": {
       "type": "array",
       "items": {
-        "type": "object",
-        "$ref": "base.json#definitions/messagePacket"
+        "$ref": "../base.json#/definitions/messagePacket"
       }
     },
     "enabled": { "type": "boolean" },
     "response": {
-      "type": "object",
       "minItems": 1,
-      "$ref": "definitions.json#definitions/embeddedResponse"
+      "$ref": "definitions.json#/definitions/embeddedResponse"
     }
   }
 }

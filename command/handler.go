@@ -174,31 +174,34 @@ func (c *Command) Create(ctx *gin.Context) {
 	// }
 
 	// Validate the data provided
-	str, _ := ioutil.ReadAll(ctx.Request.Body)
 	// Bind the JSON values in the request to the ClientSchema object
-	err := ctx.BindJSON(&vals)
+	body, _ := ioutil.ReadAll(ctx.Request.Body)
+	// data := util.FlattenJSON(body)
+	// err := json.Unmarshal(data, &vals)
+	// if err != nil {
+	// 	ctx.AbortWithStatusJSON(http.StatusBadRequest, util.HandleJSONErrors(body, err))
+	// 	return
+	// }
 	// We can continue validating the input so as to get both syntax and schema
 	// errors
 	// Validate the JSON values binding
-	if err != nil {
-		// Check if it's a validation error and if so convert to a human-readable
-		// error message
-		resp, convErr := util.ValidateInput(string(str), schema)
-		// convErr is nil so we have an error that needs to be returned to the user
-		if convErr == nil {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, resp)
-			return
-		}
+
+	log.Debug("validating")
+	validateErr, convErr := util.ValidateInput(body, schema)
+	// convErr is nil so we have an error that needs to be returned to the user
+	if convErr != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, validateErr)
+		return
 	}
 
 	var toCreate map[string]interface{}
 	// Unmarshal the JSON data into the values we'll use to create the resource
-	if data, err := json.Marshal(createVals); err != nil {
+	createData, err := json.Marshal(createVals)
+	if err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
 		return
-	} else {
-		json.Unmarshal(data, &toCreate)
 	}
+	json.Unmarshal(createData, &toCreate)
 
 	// Attempt to create the new resource and check if it errored at all
 	if _, err := c.Conn.Create(c.Table, toCreate); err != nil {
