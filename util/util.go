@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
-	"gopkg.in/go-playground/validator.v9"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -54,12 +53,12 @@ func MapStringToInterface(vars map[string]string) map[string]interface{} {
 // NiceError factors away the erroring of a function into a clean single-line function call
 func NiceError(ctx *gin.Context, err error, code int) {
 	log.Error(err.Error())
-	ve, ok := err.(validator.ValidationErrors)
-	if !ok {
-		ctx.AbortWithStatus(code)
-		return
+	errResp := map[string][]string{
+		"errors": []string{
+			err.Error(),
+		},
 	}
-	ctx.AbortWithStatusJSON(code, ve)
+	ctx.AbortWithStatusJSON(code, errResp)
 }
 
 // FlattenJSON takes a context and returns the flattened/whitespace-removed

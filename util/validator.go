@@ -3,9 +3,8 @@ package util
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 
-	log "github.com/sirupsen/logrus"
 	jschema "github.com/xeipuuv/gojsonschema"
 )
 
@@ -42,29 +41,31 @@ func HandleJSONErrors(source []byte, err error) APIError {
 
 // ValidateInput valids the data provided against the provided JSON schema
 func ValidateInput(source []byte, schema string) (APIError, error) {
-	log.Debug(string(source))
 	var errors = make(APIError)
-	schemaStream, err := ioutil.ReadFile("./" + schema)
+
+	path, err := os.Getwd()
 	if err != nil {
-		log.Error(err)
 		return nil, err
 	}
 
-	schemaLoader := jschema.NewBytesLoader(schemaStream)
+	// TODO: Make schemaLoader static so we're not constantly re-creating a schema
+	// 			 each time
+	schemaLoader := jschema.NewReferenceLoader("file://" + path + schema)
 	dataLoader := jschema.NewBytesLoader(source)
+
 	res, err := jschema.Validate(schemaLoader, dataLoader)
-
-	log.Error(err)
-
 	if err != nil {
-		return errors, err
+		return nil, err
 	}
 
 	if res.Errors() != nil {
 		for _, err := range res.Errors() {
-			errors[err.Field()] = err.String()
+			errors[err.Field()] = err.Description()
 		}
+		// There were errors, return those
+		return errors, nil
 	}
 
-	return errors, err
+	// Passed validation
+	return nil, err
 }

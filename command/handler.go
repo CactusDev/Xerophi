@@ -17,8 +17,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var schema = "command/commandSchema.json"
-
 // Command is the struct that implements the handler interface for the command resource
 type Command struct {
 	Conn           *rethink.Connection // The RethinkDB connection
@@ -50,45 +48,6 @@ func (c *Command) ReturnOne(filter map[string]interface{}) (ResponseSchema, erro
 	// It has been successfully populated, set this to true
 	response.Populated = true
 	return response, nil
-}
-
-// Update handles the updating of a record if the record exists
-func (c *Command) Update(ctx *gin.Context) {
-	token := html.EscapeString(ctx.Param("token"))
-	name := html.EscapeString(ctx.Param("name"))
-	filter := map[string]interface{}{"token": token, "name": name}
-	resp, err := c.Conn.GetByFilter(c.Table, filter, 1)
-
-	if err != nil {
-		util.NiceError(ctx, err, http.StatusBadRequest)
-		return
-	}
-	if resp == nil {
-		// Resource doesn't exist, return a 404
-		ctx.AbortWithStatus(http.StatusNotFound)
-		return
-	}
-	// Command exists, lets update it
-	// Bind the JSON from the request
-	var updateData map[string]interface{}
-	err = ctx.BindJSON(updateData)
-	if err != nil {
-		util.NiceError(ctx, err, http.StatusInternalServerError)
-		return
-	}
-	// What ID are we using to update?
-	id, err := util.GetResourceID(resp)
-	if err != nil {
-		ctx.AbortWithStatus(http.StatusInternalServerError)
-		return
-	}
-	updated, err := c.Conn.Update(c.Table, id, updateData)
-	if err != nil {
-		util.NiceError(ctx, err, http.StatusInternalServerError)
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"original": resp, "updated": updated})
 }
 
 // GetAll returns all records associated with the token
@@ -139,57 +98,44 @@ func (c *Command) GetSingle(ctx *gin.Context) {
 		return
 	}
 
-	var status int
 	if res.Populated {
-		status = http.StatusOK
-	} else {
-		status = http.StatusNotFound
+		ctx.JSON(http.StatusOK, util.MarshalResponse(res))
 	}
 
-	ctx.JSON(status, util.MarshalResponse(res))
+	// None were found, 404 that boyo
+	ctx.JSON(http.StatusNotFound, nil)
 }
 
 // Create creates a new record
 func (c *Command) Create(ctx *gin.Context) {
 	// Declare default values
-	vals := ClientSchema{
-		Enabled: true,
-	}
 	createVals := CreationSchema{
 		CreatedAt: time.Now().UTC(),
+		Token:     strings.ToLower(html.EscapeString(ctx.Param("token"))),
+		Name:      html.EscapeString(ctx.Param("name")),
 	}
-
-	// Update the token and name values from the request
-	createVals.Token = strings.ToLower(ctx.Param("token"))
-	createVals.Name = ctx.Param("name")
-	// Get the JSON values
-	createVals.ClientSchema = vals
 
 	// Check if it exists yet
 	filter := map[string]interface{}{"token": createVals.Token, "name": createVals.Name}
-	// if res, _ := c.ReturnOne(filter); res.Populated {
-	// 	// It exists already, error out, can't edit from this endpoint
-	// 	ctx.AbortWithStatusJSON(http.StatusConflict, util.MarshalResponse(res))
-	// 	return
-	// }
+	if res, _ := c.ReturnOne(filter); res.Populated {
+		// It exists already, error out, can't edit from this endpoint
+		ctx.AbortWithStatusJSON(http.StatusConflict, util.MarshalResponse(res))
+		return
+	}
 
 	// Validate the data provided
-	// Bind the JSON values in the request to the ClientSchema object
+	// Read the request body into a byte stream
 	body, _ := ioutil.ReadAll(ctx.Request.Body)
-	// data := util.FlattenJSON(body)
-	// err := json.Unmarshal(data, &vals)
-	// if err != nil {
-	// 	ctx.AbortWithStatusJSON(http.StatusBadRequest, util.HandleJSONErrors(body, err))
-	// 	return
-	// }
-	// We can continue validating the input so as to get both syntax and schema
-	// errors
-	// Validate the JSON values binding
 
-	log.Debug("validating")
-	validateErr, convErr := util.ValidateInput(body, schema)
-	// convErr is nil so we have an error that needs to be returned to the user
+	// TODO: Make ValidateInput everything we need so we don't need extra ifs here
+	validateErr, convErr := util.ValidateInput(body, "/command/createSchema.json")
+	// We have an error outside of validation
 	if convErr != nil {
+		util.NiceError(ctx, convErr, http.StatusBadRequest)
+		return
+	} else
+	// We have a validation error
+	if validateErr != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, validateErr)
 		return
 	}
@@ -218,6 +164,61 @@ func (c *Command) Create(ctx *gin.Context) {
 
 	// Aaaand success
 	ctx.JSON(http.StatusCreated, util.MarshalResponse(res))
+}
+
+// Update handles the updating of a record if the record exists
+func (c *Command) Update(ctx *gin.Context) {
+	token := html.EscapeString(ctx.Param("token"))
+	name := html.EscapeString(ctx.Param("name"))
+	filter := map[string]interface{}{"token": token, "name": name}
+	resp, err := c.Conn.GetByFilter(c.Table, filter, 1)
+
+	if err != nil {
+		util.NiceError(ctx, err, http.StatusBadRequest)
+		return
+	}
+	if resp == nil {
+		// Resource doesn't exist, return a 404
+		ctx.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+	// Command exists, lets update it
+	// Bind the JSON from the request
+	var updateData map[string]interface{}
+
+	// Validate the data provided
+	// Read the request body into a byte stream
+	body, _ := ioutil.ReadAll(ctx.Request.Body)
+
+	// TODO: Make ValidateInput everything we need so we don't need extra ifs here
+	validateErr, convErr := util.ValidateInput(body, "/command/schema.json")
+	// We have an error outside of validation
+	if convErr != nil {
+		util.NiceError(ctx, convErr, http.StatusBadRequest)
+		return
+	} else
+	// We have a validation error
+	if validateErr != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, validateErr)
+		return
+	}
+
+	// Data passed validation, use the that for updateData
+	json.Unmarshal(body, &updateData)
+
+	// What ID are we using to update?
+	id, err := util.GetResourceID(resp)
+	if err != nil {
+		ctx.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	updated, err := c.Conn.Update(c.Table, id, updateData)
+	if err != nil {
+		util.NiceError(ctx, err, http.StatusInternalServerError)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"original": resp, "updated": updated})
 }
 
 // Delete removes a record
