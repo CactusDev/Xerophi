@@ -13,7 +13,7 @@
     "enabled": { "type": "boolean" },
     "response": {
       "minItems": 1,
-      "$ref": "definitions.json#/definitions/embeddedResponse"
+      "$ref": "definitions.json#/definitions/responseEdit"
     }
   }
 }

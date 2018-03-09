@@ -100,10 +100,11 @@ func (c *Command) GetSingle(ctx *gin.Context) {
 
 	if res.Populated {
 		ctx.JSON(http.StatusOK, util.MarshalResponse(res))
+		return
 	}
 
-	// None were found, 404 that boyo
-	ctx.JSON(http.StatusNotFound, nil)
+	// None were found Jim, 404 that boyo
+	ctx.AbortWithStatus(http.StatusNotFound)
 }
 
 // Create creates a new record
@@ -212,14 +213,52 @@ func (c *Command) Update(ctx *gin.Context) {
 		ctx.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
-	updated, err := c.Conn.Update(c.Table, id, updateData)
+	_, err = c.Conn.Update(c.Table, id, updateData)
 	if err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"original": resp, "updated": updated})
+	// Retrieve the newly created record
+	res, err := c.ReturnOne(filter)
+	if err != nil {
+		util.NiceError(ctx, err, http.StatusInternalServerError)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, util.MarshalResponse(res))
 }
 
-// Delete removes a record
-func (c *Command) Delete(ctx *gin.Context) {}
+// Delete soft-deletes a record
+func (c *Command) Delete(ctx *gin.Context) {
+	token := html.EscapeString(ctx.Param("token"))
+	name := html.EscapeString(ctx.Param("name"))
+	filter := map[string]interface{}{"token": token, "name": name}
+	resp, err := c.Conn.GetByFilter(c.Table, filter, 1)
+
+	if err != nil {
+		util.NiceError(ctx, err, http.StatusBadRequest)
+		return
+	}
+	if resp == nil {
+		// Resource doesn't exist, return a 404
+		ctx.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	rs, valid := resp[0].(map[string]interface{})
+	if !valid {
+		log.Errorf("[%s] - Unable to typecast response to correct type", c.Table)
+		ctx.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	_, err = c.Conn.Delete(c.Table, rs["id"].(string))
+	if err != nil {
+		util.NiceError(ctx, err, http.StatusInternalServerError)
+		return
+	}
+
+	// Success
+	ctx.Status(http.StatusOK)
+}

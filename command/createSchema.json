@@ -6,9 +6,15 @@
   "required": [ "arguments", "response" ],
   "properties": {
     "arguments": {
-      "$ref": "schema.json#/properties/arguments"
-     },
-    "enabled": { "$ref": "schema.json#/properties/enabled" },
-    "response": { "$ref": "schema.json#/properties/response" }
+      "type": "array",
+      "items": {
+        "$ref": "../base.json#/definitions/messagePacket"
+      }
+    },
+    "enabled": { "type": "boolean" },
+    "response": {
+      "minItems": 1,
+      "$ref": "definitions.json#/definitions/responseCreate"
+    }
   }
 }

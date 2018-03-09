@@ -14,6 +14,7 @@ func (c *Connection) Update(table string, uid string, data map[string]interface{
 		log.Error(err.Error())
 		return nil, err
 	}
+
 	return resp, nil
 }
 
@@ -30,7 +31,7 @@ func (c *Connection) Create(table string, data map[string]interface{}) (interfac
 // Delete ... well, it deletes a record. Softly.
 func (c *Connection) Delete(table string, uid string) (interface{}, error) {
 	// Check if the record exists
-	resp, err := r.Table(table).Update(map[string]interface{}{"deletedAt": time.Now().UTC().Unix()}).RunWrite(c.Session)
+	resp, err := r.Table(table).Get(uid).Update(map[string]interface{}{"deletedAt": time.Now().UTC().Unix()}).RunWrite(c.Session)
 	if err != nil {
 		log.Error(err.Error())
 		return nil, err

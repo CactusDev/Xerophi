@@ -11,10 +11,15 @@ func (c *Connection) GetSingle(filter map[string]interface{}, table string) (int
 	var response interface{}
 	res.One(&response)
 
+	if response.(map[string]interface{})["deletedAt"].(float64) != 0 {
+		// Don't include anything that has a non-zero deletedAt (soft deleted)
+		return nil, nil
+	}
+
 	return response, nil
 }
 
-// GetByUUID returns a single object from the current table via the GetByUUID
+// GetByUUID returns a single object from the current table via the uuid
 func (c *Connection) GetByUUID(uuid string, table string) (interface{}, error) {
 	res, err := r.Table(table).Get(uuid).Run(c.Session)
 	defer res.Close()
@@ -23,6 +28,11 @@ func (c *Connection) GetByUUID(uuid string, table string) (interface{}, error) {
 	}
 	var response interface{}
 	res.One(&response)
+
+	if response.(map[string]interface{})["deletedAt"].(float64) != 0 {
+		// Don't include anything that has a non-zero deletedAt (soft deleted)
+		return nil, nil
+	}
 
 	return response, nil
 }
@@ -48,8 +58,17 @@ func (c *Connection) GetMultiple(table string, limit int) ([]interface{}, error)
 	if err != nil {
 		return nil, err
 	}
+	var fromDB []interface{}
 	var response []interface{}
-	res.All(&response)
+	res.All(&fromDB)
+
+	for _, val := range fromDB {
+		if val.(map[string]interface{})["deletedAt"].(float64) != 0 {
+			// Don't include anything that has a non-zero deletedAt (soft deleted)
+			continue
+		}
+		response = append(response, val)
+	}
 
 	return response, nil
 }
@@ -69,8 +88,17 @@ func (c *Connection) GetByFilter(table string, filter map[string]interface{}, li
 	if err != nil {
 		return nil, err
 	}
+	var fromDB []interface{}
 	var response []interface{}
-	res.All(&response)
+	res.All(&fromDB)
+
+	for _, val := range fromDB {
+		if val.(map[string]interface{})["deletedAt"].(float64) != 0 {
+			// Don't include anything that has a non-zero deletedAt (soft deleted)
+			continue
+		}
+		response = append(response, val)
+	}
 
 	return response, nil
 }
