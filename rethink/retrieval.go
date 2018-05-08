@@ -1,6 +1,8 @@
 package rethink
 
-import r "gopkg.in/gorethink/gorethink.v4"
+import (
+	r "gopkg.in/gorethink/gorethink.v4"
+)
 
 // GetSingle returns a single object from the current table via a filter key
 func (c *Connection) GetSingle(filter map[string]interface{}, table string) (interface{}, error) {
@@ -10,6 +12,10 @@ func (c *Connection) GetSingle(filter map[string]interface{}, table string) (int
 	}
 	var response interface{}
 	res.One(&response)
+
+	if response == nil {
+		return response, nil
+	}
 
 	if response.(map[string]interface{})["deletedAt"].(float64) != 0 {
 		// Don't include anything that has a non-zero deletedAt (soft deleted)

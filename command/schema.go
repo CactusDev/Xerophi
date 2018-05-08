@@ -42,6 +42,7 @@ type CreationSchema struct {
 	// Ignore these fields in user input, they will be filled automatically by the API
 	Count     int       `json:"count"`
 	CreatedAt time.Time `json:"createdAt"`
+	DeletedAt float64   `json:"deletedAt"`
 	Token     string    `json:"token"`
 	Name      string    `json:"name"`
 }
