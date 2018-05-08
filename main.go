@@ -46,11 +46,22 @@ func init() {
 }
 
 func generateRoutes(h types.Handler, g *gin.RouterGroup) {
-	g.GET("", h.GetAll)
-	g.PATCH("/:name", h.Update)
-	g.POST("/:name", h.Create)
-	g.GET("/:name", h.GetSingle)
-	g.DELETE("/:name", h.Delete)
+	for _, r := range h.Routes() {
+		if !r.Enabled {
+			// Route currently disabled
+			continue
+		}
+		switch r.Verb {
+		case "GET":
+			g.GET(r.Path, r.Handler)
+		case "PATCH":
+			g.PATCH(r.Path, r.Handler)
+		case "POST":
+			g.POST(r.Path, r.Handler)
+		case "DELETE":
+			g.DELETE(r.Path, r.Handler)
+		}
+	}
 }
 
 func main() {

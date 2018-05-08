@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/CactusDev/Xerophi/rethink"
+	"github.com/CactusDev/Xerophi/types"
 	"github.com/CactusDev/Xerophi/util"
 
 	"github.com/gin-gonic/gin"
@@ -20,10 +21,34 @@ import (
 
 // Command is the struct that implements the handler interface for the command resource
 type Command struct {
-	Conn           *rethink.Connection // The RethinkDB connection
-	Table          string              // The database table we're using
-	CreationSchema struct{}            // The schema that the incoming JSON will be decoded into
-	ResponseSchema struct{}            // The schema that will sent in response
+	Conn  *rethink.Connection // The RethinkDB connection
+	Table string              // The database table we're using
+}
+
+// Routes returns the routing information for this endpoint
+func (c *Command) Routes() []types.RouteDetails {
+	return []types.RouteDetails{
+		types.RouteDetails{
+			Enabled: true, Path: "", Verb: "GET",
+			Handler: c.GetAll,
+		},
+		types.RouteDetails{
+			Enabled: true, Path: "/:name", Verb: "GET",
+			Handler: c.GetSingle,
+		},
+		types.RouteDetails{
+			Enabled: true, Path: "/:name", Verb: "PATCH",
+			Handler: c.Update,
+		},
+		types.RouteDetails{
+			Enabled: true, Path: "/:name", Verb: "POST",
+			Handler: c.Create,
+		},
+		types.RouteDetails{
+			Enabled: true, Path: "/:name", Verb: "DELETE",
+			Handler: c.Delete,
+		},
+	}
 }
 
 // ReturnOne retrieves a single record given the filter provided
@@ -165,6 +190,12 @@ func (c *Command) Create(ctx *gin.Context) {
 		return
 	}
 
+	// Unmarshal the information we need to create the new resource
+	var vals CreationSchema
+	json.Unmarshal(body, &vals)
+	createVals.Response = vals.Response
+	createVals.Arguments = vals.Arguments
+
 	var toCreate map[string]interface{}
 	// Unmarshal the JSON data into the values we'll use to create the resource
 	createData, err := json.Marshal(createVals)
@@ -182,7 +213,9 @@ func (c *Command) Create(ctx *gin.Context) {
 
 	// Retrieve the newly created record
 	res, err = c.ReturnOne(filter)
-	if err != nil {
+	retRes, ok = err.(rethink.RetrievalResult)
+	// If !ok AND then err != nil then we have an actual error and not a RetRes
+	if !ok && err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
 		return
 	}
@@ -232,8 +265,10 @@ func (c *Command) Update(ctx *gin.Context) {
 		return
 	}
 
+	// NOTE: This doesn't work, allows editing of values it shouldn't
+	// and addition of random fields
 	// Data passed validation, use the that for updateData
-	json.Unmarshal(body, &updateData)
+	// json.Unmarshal(body, &updateData)
 
 	_, err = c.Conn.Update(c.Table, resp.ID, updateData)
 	if err != nil {

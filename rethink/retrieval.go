@@ -1,6 +1,8 @@
 package rethink
 
 import (
+	"math/rand"
+
 	r "gopkg.in/gorethink/gorethink.v4"
 )
 
@@ -93,7 +95,7 @@ func (c *Connection) GetMultiple(table string, limit int) ([]interface{}, error)
 	return response, nil
 }
 
-// GetByFilter is a like GetMultiple, except it has the ability to filter the results first
+// GetByFilter is like GetMultiple, except it has the ability to filter the results first
 func (c *Connection) GetByFilter(table string, filter map[string]interface{}, limit int) ([]interface{}, error) {
 	query := r.Table(table)
 	if len(filter) > 0 {
@@ -121,4 +123,18 @@ func (c *Connection) GetByFilter(table string, filter map[string]interface{}, li
 	}
 
 	return response, nil
+}
+
+// GetRandom retrieves a single random record from the table given the filter
+func (c *Connection) GetRandom(table string, filter map[string]interface{}) (interface{}, error) {
+	response, err := c.GetByFilter(table, filter, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(response) == 0 {
+		return nil, nil
+	}
+
+	return response[rand.Intn(len(response))], nil
 }
