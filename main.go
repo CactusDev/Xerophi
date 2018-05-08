@@ -75,16 +75,15 @@ func main() {
 	// Intialize the monitoring/status system
 	monitor := rethink.Status{
 		Tables: map[string]struct{}{
-			"commands": struct{}{},
+			"commands": {},
 		},
 		DBs: map[string]struct{}{
-			"cactus": struct{}{},
+			"cactus": {},
 		},
 		LastUpdated: time.Now(),
 	}
 
 	monitor.Monitor(&rdbConn)
-
 	api.GET("/status", monitor.APIStatusHandler)
 
 	for baseRoute, handler := range handlers {

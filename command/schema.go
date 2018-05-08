@@ -1,11 +1,12 @@
 package command
 
 import (
+	"time"
+
 	"github.com/CactusDev/Xerophi/schemas"
+	"github.com/CactusDev/Xerophi/types"
 	"github.com/CactusDev/Xerophi/util"
 )
-
-type meta map[string]interface{}
 
 // ResponseSchema is the schema for the data that will be sent out to the client
 type ResponseSchema struct {
@@ -19,8 +20,9 @@ type ResponseSchema struct {
 	Token     string                  `jsonapi:"meta,token"`
 }
 
-func (rs ResponseSchema) JSONAPIMeta() *meta {
-	return &meta{
+// JSONAPIMeta returns a meta object for the response
+func (rs ResponseSchema) JSONAPIMeta() *types.Meta {
+	return &types.Meta{
 		"createdAt": rs.CreatedAt,
 		"token":     rs.Token,
 	}
@@ -28,29 +30,34 @@ func (rs ResponseSchema) JSONAPIMeta() *meta {
 
 // ClientSchema is the schema the data from the client will be marshalled into
 type ClientSchema struct {
-	Arguments []schemas.MessagePacket `json:"arguments" validate:"required"`
-	Enabled   bool                    `json:"enabled" validate:"required"`
-	Response  EmbeddedResponseSchema  `json:"response" validate:"required"`
+	Arguments []schemas.MessagePacket `json:"arguments"`
+	Enabled   bool                    `json:"enabled"`
+	Response  EmbeddedResponseSchema  `json:"response"`
+}
+
+// CreationSchema is all the data required for a new command to be created
+type CreationSchema struct {
+	ClientSchema
 	// Ignore these fields in user input, they will be filled automatically by the API
-	ID        string `json:"id" validate:"-"`
-	Count     int    `json:"count" validate:"-"`
-	CreatedAt string `json:"createdAt" validate:"-"`
-	Token     string `json:"token" validate:"-"`
-	Name      string `json:"name" validate:"-"`
+	Count     int       `json:"count"`
+	CreatedAt time.Time `json:"createdAt"`
+	DeletedAt float64   `json:"deletedAt"`
+	Token     string    `json:"token"`
+	Name      string    `json:"name"`
 }
 
 // EmbeddedResponseSchema is the schema that is stored under the response key in ResponseSchema
 type EmbeddedResponseSchema struct {
-	Action  bool                    `jsonapi:"attr,action" validate:"required"`
-	Message []schemas.MessagePacket `jsonapi:"attr,message" validate:"required,gt=0"`
-	Role    int                     `jsonapi:"attr,role" validate:"gte=0,lte=256"`
-	Target  string                  `jsonapi:"attr,target"`
-	User    string                  `jsonapi:"attr,user"`
+	Action  bool                    `json:"action" jsonapi:"attr,action"`
+	Message []schemas.MessagePacket `json:"message" jsonapi:"attr,message"`
+	Role    int                     `json:"role" jsonapi:"attr,role"`
+	Target  string                  `json:"target" jsonapi:"attr,target"`
+	User    string                  `json:"user" jsonapi:"attr,user"`
 }
 
 // GetAPITag allows each of these types to implement the JSONAPISchema interface
-func (r ResponseSchema) GetAPITag(lookup string) string {
-	return util.FieldTag(r, lookup, "jsonapi")
+func (rs ResponseSchema) GetAPITag(lookup string) string {
+	return util.FieldTag(rs, lookup, "jsonapi")
 }
 
 // GetAPITag allows each of these types to implement the JSONAPISchema interface
