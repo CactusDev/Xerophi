@@ -18,7 +18,6 @@ type ResponseSchema struct {
 	Name      string                  `jsonapi:"attr,name"`
 	Response  EmbeddedResponseSchema  `jsonapi:"attr,response"`
 	Token     string                  `jsonapi:"meta,token"`
-	Populated bool
 }
 
 // JSONAPIMeta returns a meta object for the response

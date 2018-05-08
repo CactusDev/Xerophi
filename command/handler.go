@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/CactusDev/Xerophi/rethink"
+	"github.com/CactusDev/Xerophi/types"
 	"github.com/CactusDev/Xerophi/util"
 
 	"github.com/gin-gonic/gin"
@@ -45,9 +46,7 @@ func (c *Command) ReturnOne(filter map[string]interface{}) (ResponseSchema, erro
 		return response, err
 	}
 
-	// It has been successfully populated, set this to true
-	response.Populated = true
-	return response, nil
+	return response, types.RetrievalResult{true, ""}
 }
 
 // GetAll returns all records associated with the token
@@ -98,7 +97,7 @@ func (c *Command) GetSingle(ctx *gin.Context) {
 		return
 	}
 
-	if res.Populated {
+	if err.(types.RetrievalResult).Success {
 		ctx.JSON(http.StatusOK, util.MarshalResponse(res))
 		return
 	}
@@ -118,7 +117,7 @@ func (c *Command) Create(ctx *gin.Context) {
 
 	// Check if it exists yet
 	filter := map[string]interface{}{"token": createVals.Token, "name": createVals.Name}
-	if res, _ := c.ReturnOne(filter); res.Populated {
+	if res, err := c.ReturnOne(filter); err.(types.RetrievalResult).Success {
 		// It exists already, error out, can't edit from this endpoint
 		ctx.AbortWithStatusJSON(http.StatusConflict, util.MarshalResponse(res))
 		return
