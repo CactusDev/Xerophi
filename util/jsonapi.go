@@ -3,6 +3,9 @@ package util
 import (
 	"reflect"
 	"strings"
+	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // JSONAPISchema is an interface used for generating the proper JSON API response packet
@@ -38,14 +41,15 @@ func pullVals(ift reflect.Type, ifv reflect.Value) (map[string]interface{}, map[
 	var meta = make(map[string]interface{})
 	var recordType = ""
 	var id = ""
+	// Iterate over all the fields in the value
 	for i := 0; i < ift.NumField(); i++ {
 		var value interface{}
+		// Get the tags in array/slice form
 		split := GetTags(ift.Field(i))
 		if split == nil {
 			// It's an anonymous field, ignore it
 			continue
 		}
-		value = ifv.Field(i).Interface()
 		if ifv.Field(i).Kind() == reflect.Struct {
 			var subID = ""
 			var subMeta map[string]interface{}
@@ -57,6 +61,22 @@ func pullVals(ift reflect.Type, ifv reflect.Value) (map[string]interface{}, map[
 				id = subID
 			}
 		}
+		value = ifv.Field(i).Interface()
+
+		// HACKity hack hack but it does what we need it to and isn't specifically
+		// BAD code, just code that only currently applies to this specific key
+		// Check if the current key is createdAt
+		if len(split) > 1 && split[1] == "createdAt" {
+			// Format the datetime as human-readable RFC1123
+			t, err := time.Parse(time.RFC3339, value.(string))
+			if err != nil {
+				// If it's stored badly somehow record the error and move on
+				log.Error(err)
+				continue
+			}
+			value = t.Format(time.RFC1123)
+		}
+
 		// Anything after the first element is tags, figure out which we want
 		for _, tag := range split {
 			// Need to set the keys w/ their names here if it's a struct
@@ -71,7 +91,6 @@ func pullVals(ift reflect.Type, ifv reflect.Value) (map[string]interface{}, map[
 				// It's the primary key/record ID & record type
 				id = ifv.Field(i).String()
 				recordType = split[1]
-			default: // Ignore any other tags
 			}
 		}
 	}

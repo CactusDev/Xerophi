@@ -31,7 +31,8 @@ type Database interface {
 	GetByFilter(table string, filter map[string]interface{}, limit int) ([]interface{}, error)
 	Update(table string, uid string, data map[string]interface{}) (interface{}, error)
 	Create(table string, data map[string]interface{}) (interface{}, error)
-	Delete(table string, uid string) (interface{}, error)
+	Delete(table string, uid string) (interface{}, error)  // Hard deletion
+	Disable(table string, uid string) (interface{}, error) // Soft deletion
 	Exists(table string, filter map[string]interface{}) (interface{}, error)
 	Status(table string) (interface{}, error)
 }

@@ -1,0 +1,8 @@
+Implement more error messages
+Migrate to jsoniter instead of builtin json lib
+Finalize command creation endpoint
+Implement command editing endpoint
+Implement command deletion endpoint (soft-deletion)
+Finalize command resource
+Try to refactor in more boilerplate/drop-in code to make other endpoints simpler
+Beat the crap out of any and all bad code
