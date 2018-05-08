@@ -4,6 +4,18 @@ import (
 	r "gopkg.in/gorethink/gorethink.v4"
 )
 
+// RetrievalResult is a specific type of error object used for tracking
+// the result of a database retrieval operation
+type RetrievalResult struct {
+	Success     bool
+	SoftDeleted bool
+	Message     string
+}
+
+func (rr RetrievalResult) Error() string {
+	return rr.Message
+}
+
 // GetSingle returns a single object from the current table via a filter key
 func (c *Connection) GetSingle(filter map[string]interface{}, table string) (interface{}, error) {
 	res, err := r.Table(table).Filter(filter).Run(c.Session)
@@ -19,7 +31,7 @@ func (c *Connection) GetSingle(filter map[string]interface{}, table string) (int
 
 	if response.(map[string]interface{})["deletedAt"].(float64) != 0 {
 		// Don't include anything that has a non-zero deletedAt (soft deleted)
-		return nil, nil
+		return response, RetrievalResult{true, true, "Requested object is soft-deleted"}
 	}
 
 	return response, nil
@@ -37,7 +49,7 @@ func (c *Connection) GetByUUID(uuid string, table string) (interface{}, error) {
 
 	if response.(map[string]interface{})["deletedAt"].(float64) != 0 {
 		// Don't include anything that has a non-zero deletedAt (soft deleted)
-		return nil, nil
+		return response, RetrievalResult{true, true, "Requested UUID is soft-deleted"}
 	}
 
 	return response, nil

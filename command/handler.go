@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/CactusDev/Xerophi/rethink"
-	"github.com/CactusDev/Xerophi/types"
 	"github.com/CactusDev/Xerophi/util"
 
 	"github.com/gin-gonic/gin"
@@ -32,7 +31,7 @@ func (c *Command) ReturnOne(filter map[string]interface{}) (ResponseSchema, erro
 
 	// Retrieve a single record from the DB based on the filter
 	fromDB, err := c.Conn.GetSingle(filter, c.Table)
-	if err != nil {
+	if err != nil && err.(rethink.RetrievalResult).SoftDeleted {
 		return response, err
 	}
 	// Was anything returned?
@@ -46,7 +45,7 @@ func (c *Command) ReturnOne(filter map[string]interface{}) (ResponseSchema, erro
 		return response, err
 	}
 
-	return response, types.RetrievalResult{true, ""}
+	return response, nil
 }
 
 // GetAll returns all records associated with the token
@@ -97,7 +96,7 @@ func (c *Command) GetSingle(ctx *gin.Context) {
 		return
 	}
 
-	if err.(types.RetrievalResult).Success {
+	if err.(rethink.RetrievalResult).Success {
 		ctx.JSON(http.StatusOK, util.MarshalResponse(res))
 		return
 	}
@@ -117,7 +116,8 @@ func (c *Command) Create(ctx *gin.Context) {
 
 	// Check if it exists yet
 	filter := map[string]interface{}{"token": createVals.Token, "name": createVals.Name}
-	if res, err := c.ReturnOne(filter); err.(types.RetrievalResult).Success {
+	res, err := c.ReturnOne(filter)
+	if err.(rethink.RetrievalResult).Success {
 		// It exists already, error out, can't edit from this endpoint
 		ctx.AbortWithStatusJSON(http.StatusConflict, util.MarshalResponse(res))
 		return

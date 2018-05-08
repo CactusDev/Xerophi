@@ -24,14 +24,3 @@ type DatabaseInfo struct {
 	Meta       map[string]interface{}
 	Schema     map[string]interface{}
 }
-
-// RetrievalResult is a specific type of error object used for tracking
-// the result of a database retrieval operation
-type RetrievalResult struct {
-	Success bool
-	Message string
-}
-
-func (rr RetrievalResult) Error() string {
-	return rr.Message
-}
