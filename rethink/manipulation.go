@@ -28,10 +28,20 @@ func (c *Connection) Create(table string, data map[string]interface{}) (interfac
 	return resp, nil
 }
 
-// Delete ... well, it deletes a record. Softly.
-func (c *Connection) Delete(table string, uid string) (interface{}, error) {
+// Disable ... well, it deletes a record. Softly.
+func (c *Connection) Disable(table string, uid string) (interface{}, error) {
 	// Check if the record exists
 	resp, err := r.Table(table).Get(uid).Update(map[string]interface{}{"deletedAt": time.Now().UTC().Unix()}).RunWrite(c.Session)
+	if err != nil {
+		log.Error(err.Error())
+		return nil, err
+	}
+	return resp, nil
+}
+
+// Delete hard deletes a record
+func (c *Connection) Delete(table string, uid string) (interface{}, error) {
+	resp, err := r.Table(table).Get(uid).Delete().RunWrite(c.Session)
 	if err != nil {
 		log.Error(err.Error())
 		return nil, err

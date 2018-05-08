@@ -29,10 +29,12 @@ func (c *Connection) GetSingle(filter map[string]interface{}, table string) (int
 		return response, nil
 	}
 
-	if response.(map[string]interface{})["deletedAt"].(float64) != 0 {
-		// Don't include anything that has a non-zero deletedAt (soft deleted)
-		return response, RetrievalResult{true, true, "Requested object is soft-deleted"}
-	}
+	// Probably want retrieval logic to be pure and not deal with any of these
+	// checks
+	// if response.(map[string]interface{})["deletedAt"].(float64) != 0 {
+	// 	// Don't include anything that has a non-zero deletedAt (soft deleted)
+	// 	return response, RetrievalResult{true, true, "Requested object is soft-deleted"}
+	// }
 
 	return response, nil
 }
