@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/CactusDev/Xerophi/command"
+	"github.com/CactusDev/Xerophi/quote"
 	"github.com/CactusDev/Xerophi/rethink"
 	"github.com/CactusDev/Xerophi/types"
 
@@ -66,6 +67,10 @@ func main() {
 		"/user/:token/command": &command.Command{
 			Conn:  &rdbConn,
 			Table: "commands",
+		},
+		"/user/:token/quote": &quote.Quote{
+			Conn:  &rdbConn,
+			Table: "quotes",
 		},
 	}
 
