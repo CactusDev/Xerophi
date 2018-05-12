@@ -86,7 +86,7 @@ func main() {
 	}
 
 	router := gin.Default()
-	api := router.Group("/api/v1")
+	api := router.Group("/api/v2")
 
 	// Intialize the monitoring/status system
 	monitor := rethink.Status{

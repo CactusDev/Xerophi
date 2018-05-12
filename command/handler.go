@@ -244,8 +244,11 @@ func (c *Command) Update(ctx *gin.Context) {
 		return
 	}
 
+	// TODO: Clean this up because it is totes crap and could be done better
+
 	// Command exists, lets update it
 	// Bind the JSON from the request
+	var bodyData ClientSchema
 	var updateData map[string]interface{}
 
 	// Validate the data provided
@@ -265,16 +268,21 @@ func (c *Command) Update(ctx *gin.Context) {
 		return
 	}
 
-	// NOTE: This doesn't work, allows editing of values it shouldn't
-	// and addition of random fields
-	// Data passed validation, use the that for updateData
-	// json.Unmarshal(body, &updateData)
+	json.Unmarshal(body, &bodyData)
+	body, err = json.Marshal(bodyData)
+	if err != nil {
+		util.NiceError(ctx, err, http.StatusInternalServerError)
+		return
+	}
+	json.Unmarshal(body, &updateData)
 
 	_, err = c.Conn.Update(c.Table, resp.ID, updateData)
 	if err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
 		return
 	}
+
+	// END GARBO CODE, MOSTLY
 
 	// Retrieve the newly updated record
 	res, err := c.ReturnOne(filter)
@@ -283,9 +291,6 @@ func (c *Command) Update(ctx *gin.Context) {
 	if !ok && err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
 		return
-	}
-	if retRes.Success && !retRes.SoftDeleted {
-		// The record exists and hasn't been soft deleted
 	}
 
 	// Success
