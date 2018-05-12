@@ -3,7 +3,6 @@ package command
 import (
 	"fmt"
 	"html"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -125,7 +124,6 @@ func (c *Command) GetSingle(ctx *gin.Context) {
 	retRes, ok := err.(rethink.RetrievalResult)
 	// If !ok AND then err != nil then we have an actual error and not a RetRes
 	if !ok && err != nil {
-		return nil, err
 		util.NiceError(ctx, err, http.StatusInternalServerError)
 		return
 	}
@@ -177,27 +175,17 @@ func (c *Command) Create(ctx *gin.Context) {
 	}
 
 	// No records already exist that match, go ahead with creation
-	// Retrieve the body data
-	body, err := ioutil.ReadAll(ctx.Request.Body)
-	if err != nil {
-		util.NiceError(ctx, err, http.StatusInternalServerError)
-		return
-	}
-
-	// Validate the data
-	validateErr, err := util.ValidateInput(body, "/command/createSchema.json")
-	// Check for regular, non-validation errors first
-	if err != nil {
-		util.NiceError(ctx, err, http.StatusInternalServerError)
-		return
-	} else if validateErr != nil {
-		// We have a validation error
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, validateErr)
-		return
-	}
-
 	// Passed validation, put in the user data & prepare the data we're using
-	createData, err := util.UnmarshalToMap(body, createVals)
+	createData, err := util.ValidateAndMap(
+		ctx.Request.Body, "command/createSchema.json", createVals)
+
+	if validateErr, ok := err.(util.APIError); !ok && err != nil {
+		util.NiceError(ctx, err, http.StatusInternalServerError)
+		return
+	} else if ok {
+		// It's a validation error
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, validateErr.Data)
+	}
 
 	// Attempt to create the new resource
 	if _, err := c.Conn.Create(c.Table, createData); err != nil {
@@ -236,30 +224,33 @@ func (c *Command) Update(ctx *gin.Context) {
 	}
 
 	// Made it past the checks, record exists
-	// Retrieve the body data
-	body, err := ioutil.ReadAll(ctx.Request.Body)
-	if err != nil {
-		util.NiceError(ctx, err, http.StatusInternalServerError)
-		return
-	}
-
-	// Validate the data
-	validateErr, err := util.ValidateInput(body, "/command/schema.json")
-	// Check for regular, non-validation errors first
-	if err != nil {
-		util.NiceError(ctx, err, http.StatusInternalServerError)
-		return
-	} else if validateErr != nil {
-		// We have a validation error
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, validateErr)
-		return
-	}
-
 	// Passed validation, put in the user data & prepare the data we're using
 	var updateVals ClientSchema
-	updateData, err := util.UnmarshalToMap(body, updateVals)
+	updateData, err := util.ValidateAndMap(
+		ctx.Request.Body, "command/schema.json", updateVals)
+
+	if validateErr, ok := err.(util.APIError); !ok && err != nil {
+		util.NiceError(ctx, err, http.StatusInternalServerError)
+		return
+	} else if ok {
+		// It's a validation error
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, validateErr.Data)
+	}
 
 	// Attempt to update the new resource
+	_, err = c.Conn.Update(c.Table, resp.ID, updateData)
+	if err != nil {
+		util.NiceError(ctx, err, http.StatusInternalServerError)
+		return
+	}
+
+	// Retrieve the newly updated record
+	response, err := c.ReturnOne(filter)
+	// If !ok AND then err != nil then we have an actual error and not a RetRes
+	if _, ok := err.(rethink.RetrievalResult); !ok && err != nil {
+		util.NiceError(ctx, err, http.StatusInternalServerError)
+		return
+	}
 
 	// Success
 	ctx.Header("x-total-count", "1")

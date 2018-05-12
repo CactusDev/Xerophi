@@ -315,16 +315,16 @@ func (q *Quote) Update(ctx *gin.Context) {}
 // 	}
 
 // 	// Retrieve the newly updated record
-// 	res, err := q.ReturnOne(filter)
-// 	retRes, ok = err.(rethink.RetrievalResult)
-// 	// If !ok AND then err != nil then we have an actual error and not a RetRes
-// 	if !ok && err != nil {
-// 		util.NiceError(ctx, err, http.StatusInternalServerError)
-// 		return
-// 	}
-// 	if retRes.Success && !retRes.SoftDeleted {
-// 		// The record exists and hasn't been soft deleted
-// 	}
+// res, err := q.ReturnOne(filter)
+// retRes, ok = err.(rethink.RetrievalResult)
+// // If !ok AND then err != nil then we have an actual error and not a RetRes
+// if !ok && err != nil {
+// 	util.NiceError(ctx, err, http.StatusInternalServerError)
+// 	return
+// }
+// if retRes.Success && !retRes.SoftDeleted {
+// 	// The record exists and hasn't been soft deleted
+// }
 
 // 	// Success
 // 	ctx.Header("x-total-count", "1")
