@@ -30,9 +30,9 @@ func (rs ResponseSchema) JSONAPIMeta() *types.Meta {
 
 // ClientSchema is the schema the data from the client will be marshalled into
 type ClientSchema struct {
-	Arguments []schemas.MessagePacket `json:"arguments"`
-	Enabled   bool                    `json:"enabled"`
-	Response  EmbeddedResponseSchema  `json:"response"`
+	Arguments []schemas.MessagePacket `json:"arguments,omitempty"`
+	Enabled   bool                    `json:"enabled,omitempty"`
+	Response  EmbeddedResponseSchema  `json:"response,omitemptyy"`
 }
 
 // CreationSchema is all the data required for a new command to be created
@@ -48,11 +48,11 @@ type CreationSchema struct {
 
 // EmbeddedResponseSchema is the schema that is stored under the response key in ResponseSchema
 type EmbeddedResponseSchema struct {
-	Action  bool                    `json:"action" jsonapi:"attr,action"`
-	Message []schemas.MessagePacket `json:"message" jsonapi:"attr,message"`
-	Role    int                     `json:"role" jsonapi:"attr,role"`
-	Target  string                  `json:"target" jsonapi:"attr,target"`
-	User    string                  `json:"user" jsonapi:"attr,user"`
+	Action  bool                    `json:"action,omitempty" jsonapi:"attr,action"`
+	Message []schemas.MessagePacket `json:"message,omitempty" jsonapi:"attr,message"`
+	Role    int                     `json:"role,omitempty" jsonapi:"attr,role"`
+	Target  string                  `json:"target,omitempty" jsonapi:"attr,target"`
+	User    string                  `json:"user,omitempty" jsonapi:"attr,user"`
 }
 
 // GetAPITag allows each of these types to implement the JSONAPISchema interface

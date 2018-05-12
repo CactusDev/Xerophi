@@ -1,7 +1,6 @@
 package util
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -61,12 +60,33 @@ func NiceError(ctx *gin.Context, err error, code int) {
 	ctx.AbortWithStatusJSON(code, errResp)
 }
 
-// FlattenJSON takes a context and returns the flattened/whitespace-removed
-// JSON data in a byte array
-func FlattenJSON(data []byte) []byte {
-	buff := new(bytes.Buffer)
-	json.Compact(buff, data)
-	return buff.Bytes()
+// UnmarshalToMap converts a byte array of input into the provided schema
+// via the "interface" (it's always a struct as we use it) to apply the JSON
+// stuff we want and then returns a map which we can use
+func UnmarshalToMap(in []byte, schema interface{}) (map[string]interface{}, error) {
+	// TODO: Find a more efficient way of doing this
+	var conv map[string]interface{}
+
+	// Unmarshal the byte slice into the provided schema
+	if err := json.Unmarshal(in, &schema); err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	// Marshal the unmarshalled byte slice back into a byte array
+	data, err := json.Marshal(schema)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	// Unmarshal our byte array into the output
+	if err := json.Unmarshal(data, &conv); err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	return conv, nil
 }
 
 func GetResourceID(data interface{}) (string, error) {

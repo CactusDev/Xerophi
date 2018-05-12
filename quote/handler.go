@@ -183,7 +183,6 @@ func (q *Quote) GetRandom(ctx *gin.Context) {
 
 // Create creates a new record
 func (q *Quote) Create(ctx *gin.Context) {
-
 	// Declare default values
 	createVals := CreationSchema{
 		CreatedAt: time.Now().UTC(),
@@ -196,13 +195,11 @@ func (q *Quote) Create(ctx *gin.Context) {
 	// Check if it exists yet
 	filter := map[string]interface{}{"token": createVals.Token, "quoteId": createVals.QuoteID}
 	res, err := q.ReturnOne(filter)
-	retRes, ok := err.(rethink.RetrievalResult)
 	// If !ok AND then err != nil then we have an actual error and not a RetRes
-	if !ok && err != nil {
+	if retRes, ok := err.(rethink.RetrievalResult); !ok && err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
 		return
-	}
-	if retRes.Success {
+	} else if retRes.Success {
 		if !retRes.SoftDeleted {
 			// It exists already but isn't soft-deleted, error out
 			// can't edit from this endpoint
@@ -256,9 +253,8 @@ func (q *Quote) Create(ctx *gin.Context) {
 
 	// Retrieve the newly created record
 	res, err = q.ReturnOne(filter)
-	retRes, ok = err.(rethink.RetrievalResult)
 	// If !ok AND then err != nil then we have an actual error and not a RetRes
-	if !ok && err != nil {
+	if _, ok := err.(rethink.RetrievalResult); !ok && err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
 		return
 	}
