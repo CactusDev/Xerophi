@@ -24,7 +24,7 @@ type ResponseSchema struct {
 // ClientSchema is the schema the data from the client will be marshalled into
 type ClientSchema struct {
 	Arguments []schemas.MessagePacket `json:"arguments"`
-	Enabled   bool                    `json:"enabled"`
+	Enabled   *bool                   `json:"enabled"`
 	Response  EmbeddedResponseSchema  `json:"response"`
 }
 
@@ -40,6 +40,13 @@ type CreationSchema struct {
 	Enabled   bool      `json:"enabled"`
 }
 
+// UpdateSchema is ClientSchema that is used when updating
+type UpdateSchema struct {
+	Arguments []schemas.MessagePacket      `json:"arguments,omitempty"`
+	Enabled   *bool                        `json:"enabled,omitempty"`
+	Response  UpdateEmbeddedResponseSchema `json:"response,omitempty"`
+}
+
 // EmbeddedResponseSchema is the schema that is stored under the response key in ResponseSchema
 type EmbeddedResponseSchema struct {
 	Action  bool                    `json:"action" jsonapi:"attr,action"`
@@ -47,6 +54,15 @@ type EmbeddedResponseSchema struct {
 	Role    int                     `json:"role" jsonapi:"attr,role"`
 	Target  string                  `json:"target" jsonapi:"attr,target"`
 	User    string                  `json:"user" jsonapi:"attr,user"`
+}
+
+// UpdateEmbeddedResponseSchema is the schema that is stored under the response key in UpdateSchema
+type UpdateEmbeddedResponseSchema struct {
+	Action  *bool                   `json:"action,omitempty" jsonapi:"attr,action"`
+	Message []schemas.MessagePacket `json:"message,omitempty" jsonapi:"attr,message"`
+	Role    *int                    `json:"role,omitempty" jsonapi:"attr,role"`
+	Target  *string                 `json:"target,omitempty" jsonapi:"attr,target"`
+	User    *string                 `json:"user,omitempty" jsonapi:"attr,user"`
 }
 
 // JSONAPIMeta returns a meta object for the response
@@ -64,6 +80,11 @@ func (rs ResponseSchema) GetAPITag(lookup string) string {
 
 // GetAPITag allows each of these types to implement the JSONAPISchema interface
 func (r EmbeddedResponseSchema) GetAPITag(lookup string) string {
+	return util.FieldTag(r, lookup, "jsonapi")
+}
+
+// GetAPITag allows each of these types to implement the JSONAPISchema interface
+func (r UpdateEmbeddedResponseSchema) GetAPITag(lookup string) string {
 	return util.FieldTag(r, lookup, "jsonapi")
 }
 
@@ -111,6 +132,23 @@ func (cs ClientSchema) DumpBody(data []byte) ([]byte, error) {
 
 	// Marshal the unmarshalled byte slice back into a byte array
 	schemaBytes, err := json.Marshal(cs)
+	if err != nil {
+		return nil, err
+	}
+
+	return schemaBytes, nil
+}
+
+// DumpBody dumps the body data bytes into this specific schema and returns
+// the bytes from this
+func (us UpdateSchema) DumpBody(data []byte) ([]byte, error) {
+	// Unmarshal the byte slice into the provided schema
+	if err := json.Unmarshal(data, &us); err != nil {
+		return nil, err
+	}
+
+	// Marshal the unmarshalled byte slice back into a byte array
+	schemaBytes, err := json.Marshal(us)
 	if err != nil {
 		return nil, err
 	}

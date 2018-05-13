@@ -226,7 +226,7 @@ func (c *Command) Update(ctx *gin.Context) {
 
 	// Made it past the checks, record exists
 	// Passed validation, put in the user data & prepare the data we're using
-	var updateVals ClientSchema
+	var updateVals UpdateSchema
 	updateData, err := util.ValidateAndMap(
 		ctx.Request.Body, "/command/schema.json", updateVals)
 

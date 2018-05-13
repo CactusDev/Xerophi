@@ -9,7 +9,7 @@ import (
 
 // Update takes the table the record is in, the UUID of the record, and the data to update it with - then updates the record (°Д°）
 func (c *Connection) Update(table string, uid string, data map[string]interface{}) (interface{}, error) {
-	resp, err := r.Table(table).Update(data).RunWrite(c.Session)
+	resp, err := r.Table(table).Get(uid).Update(data).RunWrite(c.Session)
 	if err != nil {
 		log.Error(err.Error())
 		return nil, err
