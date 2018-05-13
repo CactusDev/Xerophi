@@ -1,6 +1,7 @@
 package command
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/CactusDev/Xerophi/schemas"
@@ -20,19 +21,11 @@ type ResponseSchema struct {
 	Token     string                  `jsonapi:"meta,token"`
 }
 
-// JSONAPIMeta returns a meta object for the response
-func (rs ResponseSchema) JSONAPIMeta() *types.Meta {
-	return &types.Meta{
-		"createdAt": rs.CreatedAt,
-		"token":     rs.Token,
-	}
-}
-
 // ClientSchema is the schema the data from the client will be marshalled into
 type ClientSchema struct {
-	Arguments []schemas.MessagePacket `json:"arguments,omitempty"`
-	Enabled   bool                    `json:"enabled,omitempty"`
-	Response  EmbeddedResponseSchema  `json:"response,omitemptyy"`
+	Arguments []schemas.MessagePacket `json:"arguments"`
+	Enabled   bool                    `json:"enabled"`
+	Response  EmbeddedResponseSchema  `json:"response"`
 }
 
 // CreationSchema is all the data required for a new command to be created
@@ -44,15 +37,24 @@ type CreationSchema struct {
 	DeletedAt float64   `json:"deletedAt"`
 	Token     string    `json:"token"`
 	Name      string    `json:"name"`
+	Enabled   bool      `json:"enabled"`
 }
 
 // EmbeddedResponseSchema is the schema that is stored under the response key in ResponseSchema
 type EmbeddedResponseSchema struct {
-	Action  bool                    `json:"action,omitempty" jsonapi:"attr,action"`
-	Message []schemas.MessagePacket `json:"message,omitempty" jsonapi:"attr,message"`
-	Role    int                     `json:"role,omitempty" jsonapi:"attr,role"`
-	Target  string                  `json:"target,omitempty" jsonapi:"attr,target"`
-	User    string                  `json:"user,omitempty" jsonapi:"attr,user"`
+	Action  bool                    `json:"action" jsonapi:"attr,action"`
+	Message []schemas.MessagePacket `json:"message" jsonapi:"attr,message"`
+	Role    int                     `json:"role" jsonapi:"attr,role"`
+	Target  string                  `json:"target" jsonapi:"attr,target"`
+	User    string                  `json:"user" jsonapi:"attr,user"`
+}
+
+// JSONAPIMeta returns a meta object for the response
+func (rs ResponseSchema) JSONAPIMeta() *types.Meta {
+	return &types.Meta{
+		"createdAt": rs.CreatedAt,
+		"token":     rs.Token,
+	}
 }
 
 // GetAPITag allows each of these types to implement the JSONAPISchema interface
@@ -63,4 +65,55 @@ func (rs ResponseSchema) GetAPITag(lookup string) string {
 // GetAPITag allows each of these types to implement the JSONAPISchema interface
 func (r EmbeddedResponseSchema) GetAPITag(lookup string) string {
 	return util.FieldTag(r, lookup, "jsonapi")
+}
+
+// DumpBody dumps the body data bytes into this specific schema and returns
+// the bytes from this
+func (cs CreationSchema) DumpBody(data []byte) ([]byte, error) {
+	// Unmarshal the byte slice into the provided schema
+	if err := json.Unmarshal(data, &cs); err != nil {
+		return nil, err
+	}
+
+	// Marshal the unmarshalled byte slice back into a byte array
+	schemaBytes, err := json.Marshal(cs)
+	if err != nil {
+		return nil, err
+	}
+
+	return schemaBytes, nil
+}
+
+// DumpBody dumps the body data bytes into this specific schema and returns
+// the bytes from this
+func (rs ResponseSchema) DumpBody(data []byte) ([]byte, error) {
+	// Unmarshal the byte slice into the provided schema
+	if err := json.Unmarshal(data, &rs); err != nil {
+		return nil, err
+	}
+
+	// Marshal the unmarshalled byte slice back into a byte array
+	schemaBytes, err := json.Marshal(rs)
+	if err != nil {
+		return nil, err
+	}
+
+	return schemaBytes, nil
+}
+
+// DumpBody dumps the body data bytes into this specific schema and returns
+// the bytes from this
+func (cs ClientSchema) DumpBody(data []byte) ([]byte, error) {
+	// Unmarshal the byte slice into the provided schema
+	if err := json.Unmarshal(data, &cs); err != nil {
+		return nil, err
+	}
+
+	// Marshal the unmarshalled byte slice back into a byte array
+	schemaBytes, err := json.Marshal(cs)
+	if err != nil {
+		return nil, err
+	}
+
+	return schemaBytes, nil
 }

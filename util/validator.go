@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/CactusDev/Xerophi/types"
 	jschema "github.com/xeipuuv/gojsonschema"
 )
 
@@ -29,18 +30,16 @@ func (e APIError) Error() string {
 // reads in the data, and then validates it against the JSONSchema provided.
 // Then it converts it into the provided schema via the interface (it's always a
 // struct as we use it) to apply the JSON  stuff we want and then returns a map
-func ValidateAndMap(in io.Reader, schemaPath string, schema interface{}) (map[string]interface{}, error) {
-	// TODO: Find a more efficient way of doing this
+func ValidateAndMap(in io.Reader, schemaPath string, schema types.Schema) (map[string]interface{}, error) {
 	var conv map[string]interface{}
-
 	// Retrieve the data from the reader, most likely the request body
-	data, err := ioutil.ReadAll(in)
+	bodyData, err := ioutil.ReadAll(in)
 	if err != nil {
 		return nil, err
 	}
 
 	// Validate the data
-	err = ValidateInput(data, schemaPath)
+	err = ValidateInput(bodyData, schemaPath)
 	// It's not an APIError and an actual error exists
 	if validateErr, ok := err.(APIError); !ok && err != nil {
 		return nil, err
@@ -49,19 +48,14 @@ func ValidateAndMap(in io.Reader, schemaPath string, schema interface{}) (map[st
 		return nil, validateErr
 	}
 
-	// Unmarshal the byte slice into the provided schema
-	if err := json.Unmarshal(data, &schema); err != nil {
-		return nil, err
-	}
-
-	// Marshal the unmarshalled byte slice back into a byte array
-	data, err = json.Marshal(schema)
+	// Dump the body data into the schema and get the bytes back
+	schemaBytes, err := schema.DumpBody(bodyData)
 	if err != nil {
 		return nil, err
 	}
 
 	// Unmarshal our byte array into the output
-	if err := json.Unmarshal(data, &conv); err != nil {
+	if err := json.Unmarshal(schemaBytes, &conv); err != nil {
 		return nil, err
 	}
 

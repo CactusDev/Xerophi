@@ -148,6 +148,7 @@ func (c *Command) Create(ctx *gin.Context) {
 		DeletedAt: 0,
 		Token:     strings.ToLower(html.EscapeString(ctx.Param("token"))),
 		Name:      html.EscapeString(ctx.Param("name")),
+		Enabled:   true,
 	}
 
 	// TODO: Could this be check pulled out into a decorator/middleware of sorts?
@@ -177,7 +178,7 @@ func (c *Command) Create(ctx *gin.Context) {
 	// No records already exist that match, go ahead with creation
 	// Passed validation, put in the user data & prepare the data we're using
 	createData, err := util.ValidateAndMap(
-		ctx.Request.Body, "command/createSchema.json", createVals)
+		ctx.Request.Body, "/command/createSchema.json", createVals)
 
 	if validateErr, ok := err.(util.APIError); !ok && err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
@@ -227,7 +228,7 @@ func (c *Command) Update(ctx *gin.Context) {
 	// Passed validation, put in the user data & prepare the data we're using
 	var updateVals ClientSchema
 	updateData, err := util.ValidateAndMap(
-		ctx.Request.Body, "command/schema.json", updateVals)
+		ctx.Request.Body, "/command/schema.json", updateVals)
 
 	if validateErr, ok := err.(util.APIError); !ok && err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
