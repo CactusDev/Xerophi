@@ -163,7 +163,8 @@ func (c *Command) Create(ctx *gin.Context) {
 		return
 	} else if retRes.Success {
 		if !retRes.SoftDeleted {
-			// We have a record that already exists, abort
+			// It exists already but isn't soft-deleted, error out
+			// can't edit from this endpoint
 			ctx.AbortWithStatusJSON(http.StatusConflict, util.MarshalResponse(res))
 			return
 		}
@@ -209,7 +210,7 @@ func (c *Command) Create(ctx *gin.Context) {
 // Update handles the updating of a record if the record exists
 func (c *Command) Update(ctx *gin.Context) {
 	// Get the data we need from the request
-	token := html.EscapeString(ctx.Param("token"))
+	token := strings.ToLower(html.EscapeString(ctx.Param("token")))
 	name := html.EscapeString(ctx.Param("name"))
 
 	// Check if the resource that we want to edit exists
