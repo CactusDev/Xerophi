@@ -3,49 +3,73 @@ package util
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
 
+	"github.com/CactusDev/Xerophi/types"
 	jschema "github.com/xeipuuv/gojsonschema"
 )
 
 // APIError is an alias for map[string]string to make cleaner code
-type APIError map[string]string
+type APIError struct {
+	Data map[string]interface{}
+}
 
-// HandleJSONErrors handles the JSON decoding errors that occur and converts
-// them into more human-readable errors
-func HandleJSONErrors(source []byte, err error) APIError {
-	var resp = make(APIError)
-	switch err.(type) {
-	case *json.SyntaxError:
-		conv, ok := err.(*json.SyntaxError)
-		resp["document"] = fmt.Sprintf("Invalid JSON at offset %d", conv.Offset)
-		offset, _ := GetFromOffset(string(source), int(conv.Offset))
-		resp["offset"] = offset
-		if !ok {
-			// We failed to convert to the specific type
-			return resp
-		}
-	case *json.UnmarshalTypeError:
-		conv, ok := err.(*json.UnmarshalTypeError)
-		resp[conv.Field] = fmt.Sprintf(
-			"Invalid type for field %s. Expected %s and received %s.",
-			conv.Field, conv.Type.String(), conv.Value)
-		if !ok {
-			// We failed to convert to the specific type
-			return resp
-		}
+// Error allows APIError to be returned as an error object
+func (e APIError) Error() string {
+	var errorString string
+	// We know that APIError is map[string]interface{}, so no error catching on type-assertion
+	for field, msg := range e.Data {
+		errorString += fmt.Sprintf("[%s] \"%s\" ", field, msg)
+	}
+	return errorString
+}
+
+// ValidateAndMap takes an io reader (most like io.ReadCloser from the request),
+// reads in the data, and then validates it against the JSONSchema provided.
+// Then it converts it into the provided schema via the interface (it's always a
+// struct as we use it) to apply the JSON  stuff we want and then returns a map
+func ValidateAndMap(in io.Reader, schemaPath string, schema types.Schema) (map[string]interface{}, error) {
+	var conv map[string]interface{}
+	// Retrieve the data from the reader, most likely the request body
+	bodyData, err := ioutil.ReadAll(in)
+	if err != nil {
+		return nil, err
 	}
 
-	return resp
+	// Validate the data
+	err = ValidateInput(bodyData, schemaPath)
+	// It's not an APIError and an actual error exists
+	if validateErr, ok := err.(APIError); !ok && err != nil {
+		return nil, err
+	} else if ok {
+		// It's a validation error
+		return nil, validateErr
+	}
+
+	// Dump the body data into the schema and get the bytes back
+	schemaBytes, err := schema.DumpBody(bodyData)
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshal our byte array into the output
+	if err := json.Unmarshal(schemaBytes, &conv); err != nil {
+		return nil, err
+	}
+
+	return conv, nil
 }
 
 // ValidateInput valids the data provided against the provided JSON schema
-func ValidateInput(source []byte, schema string) (APIError, error) {
-	var errors = make(APIError)
+// Will only return an error if there's a problem with the data
+func ValidateInput(source []byte, schema string) error {
+	var errors APIError
 
 	path, err := os.Getwd()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// TODO: Make schemaLoader static so we're not constantly re-creating a schema
@@ -55,17 +79,17 @@ func ValidateInput(source []byte, schema string) (APIError, error) {
 
 	res, err := jschema.Validate(schemaLoader, dataLoader)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if res.Errors() != nil {
-		for _, err := range res.Errors() {
-			errors[err.Field()] = err.Description()
+		for _, jschemaErr := range res.Errors() {
+			errors.Data[jschemaErr.Field()] = jschemaErr.Description()
 		}
 		// There were errors, return those
-		return errors, nil
+		return errors
 	}
 
 	// Passed validation
-	return nil, err
+	return nil
 }

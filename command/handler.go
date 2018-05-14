@@ -1,10 +1,8 @@
 package command
 
 import (
-	"encoding/json"
 	"fmt"
 	"html"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -81,7 +79,7 @@ func (c *Command) ReturnOne(filter map[string]interface{}) (ResponseSchema, erro
 
 // GetAll returns all records associated with the token
 func (c *Command) GetAll(ctx *gin.Context) {
-	token := html.EscapeString(ctx.Param("token"))
+	token := strings.ToLower(html.EscapeString(ctx.Param("token")))
 	filter := map[string]interface{}{"token": token}
 	fromDB, err := c.Conn.GetByFilter(c.Table, filter, 0)
 	if err != nil {
@@ -130,6 +128,7 @@ func (c *Command) GetSingle(ctx *gin.Context) {
 		return
 	}
 
+	// If we find one then we're just going to return right away
 	if retRes.Success && !retRes.SoftDeleted {
 		ctx.Header("x-total-count", "1")
 		ctx.JSON(http.StatusOK, util.MarshalResponse(res))
@@ -138,6 +137,7 @@ func (c *Command) GetSingle(ctx *gin.Context) {
 
 	// None were found Jim, 404 that boyo
 	ctx.AbortWithStatus(http.StatusNotFound)
+	return
 }
 
 // Create creates a new record
@@ -145,20 +145,23 @@ func (c *Command) Create(ctx *gin.Context) {
 	// Declare default values
 	createVals := CreationSchema{
 		CreatedAt: time.Now().UTC(),
+		DeletedAt: 0,
 		Token:     strings.ToLower(html.EscapeString(ctx.Param("token"))),
 		Name:      html.EscapeString(ctx.Param("name")),
+		Enabled:   true,
 	}
 
-	// Check if it exists yet
-	filter := map[string]interface{}{"token": createVals.Token, "name": createVals.Name}
+	// TODO: Could this be check pulled out into a decorator/middleware of sorts?
+	// Do an initial check if it exists
+	filter := map[string]interface{}{
+		"token": createVals.Token, "name": createVals.Name}
 	res, err := c.ReturnOne(filter)
-	retRes, ok := err.(rethink.RetrievalResult)
-	// If !ok AND then err != nil then we have an actual error and not a RetRes
-	if !ok && err != nil {
+
+	// Check if it's a RetrievalResult, or an actual error
+	if retRes, ok := err.(rethink.RetrievalResult); !ok && err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
 		return
-	}
-	if retRes.Success {
+	} else if retRes.Success {
 		if !retRes.SoftDeleted {
 			// It exists already but isn't soft-deleted, error out
 			// can't edit from this endpoint
@@ -173,129 +176,87 @@ func (c *Command) Create(ctx *gin.Context) {
 		}
 	}
 
-	// Validate the data provided
-	// Read the request body into a byte stream
-	body, _ := ioutil.ReadAll(ctx.Request.Body)
+	// No records already exist that match, go ahead with creation
+	// Passed validation, put in the user data & prepare the data we're using
+	createData, err := util.ValidateAndMap(
+		ctx.Request.Body, "/command/createSchema.json", createVals)
 
-	// TODO: Make ValidateInput everything we need so we don't need extra ifs here
-	validateErr, convErr := util.ValidateInput(body, "/command/createSchema.json")
-	// We have an error outside of validation
-	if convErr != nil {
-		util.NiceError(ctx, convErr, http.StatusBadRequest)
-		return
-	} else
-	// We have a validation error
-	if validateErr != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, validateErr)
-		return
-	}
-
-	// Unmarshal the information we need to create the new resource
-	var vals CreationSchema
-	json.Unmarshal(body, &vals)
-	createVals.Response = vals.Response
-	createVals.Arguments = vals.Arguments
-
-	var toCreate map[string]interface{}
-	// Unmarshal the JSON data into the values we'll use to create the resource
-	createData, err := json.Marshal(createVals)
-	if err != nil {
+	if validateErr, ok := err.(util.APIError); !ok && err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
 		return
+	} else if ok {
+		// It's a validation error
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, validateErr.Data)
 	}
-	json.Unmarshal(createData, &toCreate)
 
-	// Attempt to create the new resource and check if it errored at all
-	if _, err := c.Conn.Create(c.Table, toCreate); err != nil {
+	// Attempt to create the new resource
+	if _, err := c.Conn.Create(c.Table, createData); err != nil {
 		util.NiceError(ctx, err, http.StatusBadRequest)
 		return
 	}
 
-	// Retrieve the newly created record
-	res, err = c.ReturnOne(filter)
-	retRes, ok = err.(rethink.RetrievalResult)
-	// If !ok AND then err != nil then we have an actual error and not a RetRes
-	if !ok && err != nil {
+	response, err := c.ReturnOne(filter)
+	// Actual error, not a RetrievalResult
+	if _, ok := err.(rethink.RetrievalResult); !ok && err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
 		return
 	}
 
 	// Aaaand success
 	ctx.Header("x-total-count", "1")
-	ctx.JSON(http.StatusCreated, util.MarshalResponse(res))
+	ctx.JSON(http.StatusCreated, util.MarshalResponse(response))
 }
 
 // Update handles the updating of a record if the record exists
 func (c *Command) Update(ctx *gin.Context) {
-	token := html.EscapeString(ctx.Param("token"))
+	// Get the data we need from the request
+	token := strings.ToLower(html.EscapeString(ctx.Param("token")))
 	name := html.EscapeString(ctx.Param("name"))
+
+	// Check if the resource that we want to edit exists
 	filter := map[string]interface{}{"token": token, "name": name}
 	resp, err := c.ReturnOne(filter)
-
-	retRes, ok := err.(rethink.RetrievalResult)
-	// If !ok AND then err != nil then we have an actual error and not a RetRes
-	if !ok && err != nil {
+	if retRes, ok := err.(rethink.RetrievalResult); !ok && err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
 		return
-	}
-	if !retRes.Success || (retRes.Success && retRes.SoftDeleted) {
-		// Resource has been soft-deleted ("doesn't exist") or doesn't exist
+	} else if retRes.Success && retRes.SoftDeleted {
+		// Record "doesn't exist", abort with a 404
 		ctx.AbortWithStatus(http.StatusNotFound)
 		return
 	}
 
-	// TODO: Clean this up because it is totes crap and could be done better
+	// Made it past the checks, record exists
+	// Passed validation, put in the user data & prepare the data we're using
+	var updateVals UpdateSchema
+	updateData, err := util.ValidateAndMap(
+		ctx.Request.Body, "/command/schema.json", updateVals)
 
-	// Command exists, lets update it
-	// Bind the JSON from the request
-	var bodyData ClientSchema
-	var updateData map[string]interface{}
-
-	// Validate the data provided
-	// Read the request body into a byte stream
-	body, _ := ioutil.ReadAll(ctx.Request.Body)
-
-	// TODO: Make ValidateInput everything we need so we don't need extra ifs here
-	validateErr, convErr := util.ValidateInput(body, "/command/schema.json")
-	// We have an error outside of validation
-	if convErr != nil {
-		util.NiceError(ctx, convErr, http.StatusBadRequest)
-		return
-	} else
-	// We have a validation error
-	if validateErr != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, validateErr)
-		return
-	}
-
-	json.Unmarshal(body, &bodyData)
-	body, err = json.Marshal(bodyData)
-	if err != nil {
+	if validateErr, ok := err.(util.APIError); !ok && err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
 		return
+	} else if ok {
+		// It's a validation error
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, validateErr.Data)
 	}
-	json.Unmarshal(body, &updateData)
 
+	// Attempt to update the new resource
 	_, err = c.Conn.Update(c.Table, resp.ID, updateData)
 	if err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
 		return
 	}
 
-	// END GARBO CODE, MOSTLY
-
 	// Retrieve the newly updated record
-	res, err := c.ReturnOne(filter)
-	retRes, ok = err.(rethink.RetrievalResult)
+	response, err := c.ReturnOne(filter)
 	// If !ok AND then err != nil then we have an actual error and not a RetRes
-	if !ok && err != nil {
+	if _, ok := err.(rethink.RetrievalResult); !ok && err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
 		return
 	}
 
 	// Success
 	ctx.Header("x-total-count", "1")
-	ctx.JSON(http.StatusOK, util.MarshalResponse(res))
+	ctx.JSON(http.StatusOK, util.MarshalResponse(response))
 }
 
 // Delete soft-deletes a record

@@ -13,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	debugFname "github.com/onrik/logrus/filename"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -39,6 +40,7 @@ func init() {
 
 	if debug || verbose {
 		log.SetLevel(log.DebugLevel)
+		log.AddHook(debugFname.NewHook())
 	}
 
 	// Load the config
@@ -63,6 +65,25 @@ func generateRoutes(h types.Handler, g *gin.RouterGroup) {
 		}
 	}
 }
+
+// TODO: Look into using this in future to remove duplicate error catching code
+// func catchPanic(ctx *gin.Context) {
+// 	defer func(ctx *gin.Context) {
+// 		if rec := recover(); rec != nil {
+// 			err, ok := rec.(types.ServerError)
+// 			if !ok {
+// 				// We have an actual panic
+// 				log.Warn("Recovered from actual panic!")
+// 				log.Warn(errors.New(rec))
+// 				return
+// 			}
+// 			// We panic-d only purpose within the function, nicely handle that
+// 			util.NiceError(ctx, err.Error, err.Code)
+// 			return
+// 		}
+// 	}(ctx)
+// 	ctx.Next()
+// }
 
 func main() {
 	rdbConn := rethink.Connection{

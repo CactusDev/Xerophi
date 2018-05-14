@@ -1,8 +1,6 @@
 package util
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -61,14 +59,7 @@ func NiceError(ctx *gin.Context, err error, code int) {
 	ctx.AbortWithStatusJSON(code, errResp)
 }
 
-// FlattenJSON takes a context and returns the flattened/whitespace-removed
-// JSON data in a byte array
-func FlattenJSON(data []byte) []byte {
-	buff := new(bytes.Buffer)
-	json.Compact(buff, data)
-	return buff.Bytes()
-}
-
+// GetResourceID tries to extract the ID from data given
 func GetResourceID(data interface{}) (string, error) {
 	var mapped map[string]interface{}
 	var isMap bool

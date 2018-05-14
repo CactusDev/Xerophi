@@ -10,6 +10,12 @@ import (
 // Meta is just a wrapper for map[string]interface{} to be used for JSONAPI meta
 type Meta map[string]interface{}
 
+// Schema is an interface for schemas so we can pass all different schemas
+// for our parsing and validation functions
+type Schema interface {
+	DumpBody(data []byte) ([]byte, error)
+}
+
 // RouteDetails gives us the info needed to automatically create handlers
 type RouteDetails struct {
 	Enabled bool
