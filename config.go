@@ -14,6 +14,7 @@ type Config struct {
 	Rethink rethinkCfg `json:"rethink"`
 	Sentry  sentryCfg  `json:"sentry"`
 	Server  serverCfg  `json:"server"`
+	Redis   redisCfg   `json:"redis"`
 }
 
 type rethinkCfg struct {
@@ -26,8 +27,16 @@ type sentryCfg struct {
 	Enabled bool   `json:"enabled"`
 }
 
+type redisCfg struct {
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	DB       int    `json:"db"`
+}
+
 type serverCfg struct {
-	Port int
+	Port int `json:"port"`
 }
 
 // LoadConfig tries to load the config from the default path "./config.json"

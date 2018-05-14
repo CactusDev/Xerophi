@@ -1,7 +1,6 @@
 package rethink
 
 import (
-	log "github.com/sirupsen/logrus"
 	r "gopkg.in/gorethink/gorethink.v4"
 )
 
@@ -82,7 +81,6 @@ func (c *Connection) Status() ([]Issue, error) {
 	// Retrieve everything from the current issues admin table
 	res, err := r.DB("rethinkdb").Table("current_issues").Run(c.Session)
 	if err != nil {
-		log.Error(err.Error())
 		return nil, err
 	}
 	res.All(&issues)

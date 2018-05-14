@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-redis/redis"
+
 	"github.com/CactusDev/Xerophi/command"
 	"github.com/CactusDev/Xerophi/quote"
 	"github.com/CactusDev/Xerophi/rethink"
@@ -86,14 +88,30 @@ func generateRoutes(h types.Handler, g *gin.RouterGroup) {
 // }
 
 func main() {
+	// Initialize connection to RethinkDB
 	rdbConn := rethink.Connection{
 		DB:   config.Rethink.DB,
 		Opts: config.Rethink.Connection,
 	}
-	err := rdbConn.Connect()
-	if err != nil {
+	log.Info("Connecting to RethinkDB...")
+	// Validate connection
+	if err := rdbConn.Connect(); err != nil {
 		log.Fatal("RethinkDB Connection Failed! - ", err)
 	}
+	log.Info("Success!")
+
+	// Initialize connection Redis
+	log.Info("Connecting to Redis...")
+	redisConn := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%d", config.Redis.Host, config.Redis.Port),
+		Password: config.Redis.Password,
+		DB:       config.Redis.DB, // Default database
+	})
+	// Validate connection
+	if _, err := redisConn.Ping().Result(); err != nil {
+		log.Fatal("Redis Connection Failed! - ", err)
+	}
+	log.Info("Success!")
 
 	handlers := map[string]types.Handler{
 		"/user/:token/command": &command.Command{
@@ -105,6 +123,8 @@ func main() {
 			Table: "quotes",
 		},
 	}
+
+	// Initialize JWT auth middleware here
 
 	router := gin.Default()
 	api := router.Group("/api/v2")
@@ -119,7 +139,6 @@ func main() {
 		},
 		LastUpdated: time.Now(),
 	}
-
 	monitor.Monitor(&rdbConn)
 	api.GET("/status", monitor.APIStatusHandler)
 

@@ -51,7 +51,6 @@ func (s *Status) Monitor(c *Connection) {
 						Description: "tl;dr we suck at making APIs",
 					},
 				}
-				continue
 			}
 			s.Issues = issues
 
