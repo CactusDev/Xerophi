@@ -8,11 +8,18 @@ import (
 
 // Custom validator functions for JWT validation
 
+var (
+	ErrInvalidToken           = errors.New("jwt: JWT Token field doesn't match request token")
+	ErrFailedScopesConversion = errors.New("jwt: Malformed scopes, should be list of strings")
+	ErrWrongNumScopes         = errors.New("jwt: Missing required scopes")
+	ErrInvalidScopes          = errors.New("jwt: Non-string scope in scopes")
+)
+
 // TokenValidator validates the JWT token's token field matches our current one
 func TokenValidator(token string) jwt.ValidatorFunc {
 	return func(j *jwt.JWT) error {
 		if j.Public()["token"] != token {
-			return errors.New("jwt: JWT Token field doesn't match request token")
+			return ErrInvalidToken
 		}
 		return nil
 	}
@@ -25,14 +32,26 @@ func ScopeValidator(requiredScopes []string) jwt.ValidatorFunc {
 	missingScopes := ""
 
 	return func(j *jwt.JWT) error {
-		jwtScopes, ok := j.Public()["scopes"].([]string)
+		s := j.Public()["scopes"]
+		jwtScopes, ok := s.([]interface{})
 		if !ok {
 			// Unable to convert scopes to the slice we need
-			return errors.New("jwt: Invalid scopes key, should be list of strings")
+			return ErrFailedScopesConversion
 		}
+
+		if len(requiredScopes) > len(jwtScopes) {
+			// We have fewer scopes in the token than are required, obviously fail
+			return ErrWrongNumScopes
+		}
+
 		// Add all the scopes from the JWT into the map with an empty struct
 		for _, scope := range jwtScopes {
-			scopes[scope] = struct{}{}
+			scopeStr, ok := scope.(string)
+			if !ok {
+				// We have a non-string value somehow
+				return ErrInvalidScopes
+			}
+			scopes[scopeStr] = struct{}{}
 		}
 
 		// Go through all the required scopes and check if they existed
