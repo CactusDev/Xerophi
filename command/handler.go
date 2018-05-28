@@ -19,8 +19,8 @@ import (
 
 // Command is the struct that implements the handler interface for the command resource
 type Command struct {
-	Conn  *rethink.Connection // The RethinkDB connection
-	Table string              // The database table we're using
+	Conn  rethink.Connection // The RethinkDB connection
+	Table string             // The database table we're using
 }
 
 // Routes returns the routing information for this endpoint

@@ -6,10 +6,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-redis/redis"
+	// "github.com/go-redis/redis"
 
 	"github.com/CactusDev/Xerophi/command"
 	"github.com/CactusDev/Xerophi/quote"
+	"github.com/CactusDev/Xerophi/redis"
 	"github.com/CactusDev/Xerophi/rethink"
 	"github.com/CactusDev/Xerophi/types"
 
@@ -47,6 +48,30 @@ func init() {
 
 	// Load the config
 	config = LoadConfig()
+
+	// Initialize connection to RethinkDB
+	log.Info("Connecting to RethinkDB...")
+	rethink.RethinkConn = &rethink.Connection{
+		DB:   config.Rethink.DB,
+		Opts: config.Rethink.Connection,
+	}
+	// Validate connection
+	if err := rethink.RethinkConn.Connect(); err != nil {
+		log.Fatal("RethinkDB Connection Failed! - ", err)
+	}
+	log.Info("Success!")
+
+	// Initialize connection Redis
+	log.Info("Connecting to Redis...")
+	redis.RedisConn = &redis.Connection{
+		DB:   config.Redis.DB,
+		Opts: config.Redis.Connection,
+	}
+	// Validate connection
+	if err := redis.RedisConn.Connect(); err != nil {
+		log.Fatal("Redis Connection Failed! - ", err)
+	}
+	log.Info("Success!")
 }
 
 func generateRoutes(h types.Handler, g *gin.RouterGroup) {
@@ -88,44 +113,15 @@ func generateRoutes(h types.Handler, g *gin.RouterGroup) {
 // }
 
 func main() {
-	// Initialize connection to RethinkDB
-	rdbConn := rethink.Connection{
-		DB:   config.Rethink.DB,
-		Opts: config.Rethink.Connection,
-	}
-	log.Info("Connecting to RethinkDB...")
-	// Validate connection
-	if err := rdbConn.Connect(); err != nil {
-		log.Fatal("RethinkDB Connection Failed! - ", err)
-	}
-	log.Info("Success!")
-
-	// Initialize connection Redis
-	log.Info("Connecting to Redis...")
-	redisConn := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", config.Redis.Host, config.Redis.Port),
-		Password: config.Redis.Password,
-		DB:       config.Redis.DB, // Default database
-	})
-	// Validate connection
-	if _, err := redisConn.Ping().Result(); err != nil {
-		log.Fatal("Redis Connection Failed! - ", err)
-	}
-	log.Info("Success!")
-
+	// Initialize the handlers with their associated paths
 	handlers := map[string]types.Handler{
-		"/user/:token/command": &command.Command{
-			Conn:  &rdbConn,
-			Table: "commands",
-		},
-		"/user/:token/quote": &quote.Quote{
-			Conn:  &rdbConn,
-			Table: "quotes",
-		},
+		"/user/:token/command": &command.Command{Table: "commands"},
+		"/user/:token/quote":   &quote.Quote{Table: "quotes"},
 	}
 
 	// Initialize JWT auth middleware here
 
+	// Initialize the router
 	router := gin.Default()
 	api := router.Group("/api/v2")
 
@@ -139,7 +135,8 @@ func main() {
 		},
 		LastUpdated: time.Now(),
 	}
-	monitor.Monitor(&rdbConn)
+	// TODO: Add a monitor for Redis
+	monitor.Monitor(rethink.RethinkConn)
 	api.GET("/status", monitor.APIStatusHandler)
 
 	for baseRoute, handler := range handlers {

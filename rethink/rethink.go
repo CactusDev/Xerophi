@@ -4,10 +4,15 @@ import (
 	r "gopkg.in/gorethink/gorethink.v4"
 )
 
+var (
+	// RethinkConn is the shareable RethinkDB connection resource
+	RethinkConn *Connection
+)
+
 // ConnectionOpts is what we need to connect to a RethinkDB server
 type ConnectionOpts struct {
 	Host     string `json:"host"`
-	User     string `json:"user"`
+	User     string `json:"username"`
 	Password string `json:"password"`
 }
 

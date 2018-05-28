@@ -3,16 +3,28 @@ package secure
 import (
 	"errors"
 
+	"github.com/CactusDev/Xerophi/redis"
+
 	"github.com/gbrlsnchs/jwt"
 )
 
 // Custom validator functions for JWT validation
 
 var (
-	ErrInvalidToken           = errors.New("jwt: JWT Token field doesn't match request token")
-	ErrFailedScopesConversion = errors.New("jwt: Malformed scopes, should be list of strings")
-	ErrWrongNumScopes         = errors.New("jwt: Missing required scopes")
-	ErrInvalidScopes          = errors.New("jwt: Non-string scope in scopes")
+	// ErrInvalidToken - JWT token doesn't match request token
+	ErrInvalidToken = errors.New(
+		"jwt: JWT Token field doesn't match request token")
+	// ErrFailedScopesConversion - Scopes passed should be a list of strings
+	ErrFailedScopesConversion = errors.New(
+		"jwt: Malformed scopes, should be list of strings")
+	// ErrWrongNumScopes - Missing required scopes in request
+	ErrWrongNumScopes = errors.New("jwt: Missing required scopes")
+	// ErrInvalidScopes - Non-string scope was passed to ReadScope
+	ErrInvalidScopes = errors.New("jwt: Non-string scope in scopes")
+	// ErrMissingToken - Token doesn't exist/has expired
+	ErrMissingToken = errors.New("jwt: Token doesn't exist")
+	// ErrInternalError - Some error occured in the parsing
+	ErrInternalError = errors.New("Internal error")
 )
 
 // TokenValidator validates the JWT token's token field matches our current one
@@ -67,6 +79,19 @@ func ScopeValidator(requiredScopes []string) jwt.ValidatorFunc {
 			return errors.New("jwt: Missing required scope(s): [ " + missingScopes + "]")
 		}
 
+		return nil
+	}
+}
+
+// ActiveValidator validates whether the token is currently active
+func ActiveValidator() jwt.ValidatorFunc {
+	return func(j *jwt.JWT) error {
+		// Check if the token exists in redis
+		if exists, err := redis.RedisConn.Exists(j.String()); err != nil {
+			return ErrInternalError
+		} else if !exists {
+			return ErrMissingToken
+		}
 		return nil
 	}
 }

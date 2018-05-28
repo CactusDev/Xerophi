@@ -8,10 +8,12 @@
         "db": "api"
     },
     "redis": {
-        "host": "localhost",
-        "port": 123,
-        "username": "",
-        "password": "",
+        "connection": {
+            "host": "localhost",
+            "port": 6379,
+            "username": "",
+            "password": ""
+        },
         "db": 0
     },
     "sentry": {

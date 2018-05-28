@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/CactusDev/Xerophi/redis"
 	"github.com/gbrlsnchs/jwt"
 
 	log "github.com/sirupsen/logrus"
@@ -27,7 +28,9 @@ func GenToken(scopes []string, token string, secret string) (string, error) {
 		})
 }
 
-// ReadScope reads in a string of scopes in the format "table:[manage/create], table:[manage/create], ..." and returns their appropriately formatted scope strings
+// ReadScope reads in a string of scopes in the format "table:[manage/create],
+// table:[manage/create], ..." and returns their appropriately formatted scope
+// strings
 func ReadScope(scopeString string) []string {
 	var scopes = make([]string, 0)
 
@@ -44,15 +47,26 @@ func ReadScope(scopeString string) []string {
 }
 
 // ValidateToken takes a jwt.JWT object and returns an string for any errors
-// encountered or "" if there are none. Does not check with Redis if token is active
-func ValidateToken(tok *jwt.JWT, reqToken string, endpointScopes []string) string {
+// encountered or "" if there are none. Does not check with Redis if token is
+// active
+func ValidateToken(tok *jwt.JWT, reqToken string, scopes []string) string {
+	// The algorithim matches HS256
 	algValidate := jwt.AlgorithmValidator(jwt.MethodHS256)
+	// The token hasn't expired
 	expValidate := jwt.ExpirationTimeValidator(time.Now())
+	// The token was issued at a valid time
 	issueValidate := jwt.IssuedAtValidator(time.Now())
+	// The token in the request matches the token in the JWT token
 	tokenValidate := TokenValidator(reqToken)
-	scopeValidate := ScopeValidator(endpointScopes)
+	// The scopes in the JWT token match the required scopes for the endpoint
+	scopeValidate := ScopeValidator(scopes)
+	// The token is currently active
+	activeValidate := ActiveValidator()
 
-	err := tok.Validate(algValidate, expValidate, issueValidate, tokenValidate, scopeValidate)
+	err := tok.Validate(
+		algValidate, expValidate, issueValidate, // Lib validators
+		tokenValidate, scopeValidate, activeValidate, // Local validators
+	)
 	if err != nil {
 		switch err {
 		case jwt.ErrAlgorithmMismatch:
@@ -67,6 +81,10 @@ func ValidateToken(tok *jwt.JWT, reqToken string, endpointScopes []string) strin
 			log.Info("JWT Validation - Non-string scope in scopes")
 		case ErrWrongNumScopes:
 			log.Info("JWT Validation - Missing a required scope by len")
+		case ErrMissingToken:
+			log.Info("JWT Validation - Token doesn't exist or has expired")
+		case ErrInternalError:
+			log.Error("Internal error happened. Fun stuff.")
 		}
 		return err.Error()
 	}
@@ -77,7 +95,11 @@ func ValidateToken(tok *jwt.JWT, reqToken string, endpointScopes []string) strin
 // TokenActive checks with redis to see if the provided JWT token string is
 // still active
 func TokenActive(token string) (bool, error) {
-	// exists, err := redisConn.HExists("activeTokens", token).Result()
+	exists, err := redis.RedisConn.Exists(fmt.Sprintf("activeTokens:%s", token))
+	if err != nil {
+		log.Error(err)
+		return false, nil
+	}
 
-	return true, nil
+	return exists, nil
 }

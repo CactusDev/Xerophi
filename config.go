@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/CactusDev/Xerophi/redis"
 	"github.com/CactusDev/Xerophi/rethink"
 )
 
@@ -28,11 +29,8 @@ type sentryCfg struct {
 }
 
 type redisCfg struct {
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	DB       int    `json:"db"`
+	Connection redis.ConnectionOpts `json:"connection"`
+	DB         int                  `json:"db"`
 }
 
 type serverCfg struct {
