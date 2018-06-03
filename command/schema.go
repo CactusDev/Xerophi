@@ -11,14 +11,16 @@ import (
 
 // ResponseSchema is the schema for the data that will be sent out to the client
 type ResponseSchema struct {
-	ID        string                  `jsonapi:"primary,command"`
+	ID string `jsonapi:"primary,command"`
+
 	Arguments []schemas.MessagePacket `jsonapi:"attr,arguments"`
 	Count     int                     `jsonapi:"attr,count"`
-	CreatedAt string                  `jsonapi:"meta,createdAt"`
 	Enabled   bool                    `jsonapi:"attr,enabled"`
 	Name      string                  `jsonapi:"attr,name"`
 	Response  EmbeddedResponseSchema  `jsonapi:"attr,response"`
-	Token     string                  `jsonapi:"meta,token"`
+
+	CreatedAt string `jsonapi:"meta,createdAt"`
+	Token     string `jsonapi:"meta,token"`
 }
 
 // ClientSchema is the schema the data from the client will be marshalled into

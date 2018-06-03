@@ -12,6 +12,7 @@ import (
 	"github.com/CactusDev/Xerophi/quote"
 	"github.com/CactusDev/Xerophi/redis"
 	"github.com/CactusDev/Xerophi/rethink"
+	"github.com/CactusDev/Xerophi/secure"
 	"github.com/CactusDev/Xerophi/types"
 
 	"github.com/gin-gonic/gin"
@@ -138,14 +139,18 @@ func main() {
 	// TODO: Add a monitor for Redis
 	monitor.Monitor(rethink.RethinkConn)
 	api.GET("/status", monitor.APIStatusHandler)
+	api.POST("/user/:token/login", secure.Login)
 
+	// Load the routes for the individual handlers
 	for baseRoute, handler := range handlers {
 		group := api.Group(baseRoute)
 		generateRoutes(handler, group)
 	}
 
+	// Start up the Gin router on the configured port
 	router.Run(fmt.Sprintf(":%d", config.Server.Port))
 
+	// Start the HTTP server
 	log.Warnf("API starting on :%d - %s", port, router.BasePath)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
