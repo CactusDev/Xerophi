@@ -78,28 +78,44 @@ func init() {
 	log.Info("Success!")
 }
 
-func generateRoutes(h types.Handler, g *gin.RouterGroup) {
-	for _, r := range h.Routes() {
-		if !r.Enabled {
-			// Route currently disabled
-			continue
-		}
-		switch r.Verb {
-		case "GET":
-			g.GET(r.Path, r.Handler)
-		case "PATCH":
-			g.PATCH(r.Path, r.Handler)
-		case "POST":
-			g.POST(r.Path, r.Handler)
-		case "DELETE":
-			g.DELETE(r.Path, r.Handler)
+func generateRoutes(resources map[string]types.Handler, api *gin.RouterGroup) {
+	for baseName, handler := range resources {
+		// Resources that are generally accessible without auth
+		open := api.Group(baseName)
+
+		for _, route := range handler.Routes() {
+			var currentGroup = open
+
+			if !route.Enabled {
+				// Route currently disabled
+				continue
+			}
+
+			if len(route.Scopes) > 0 {
+				// Figure out which scopes are required
+				// The group needs to be a separate group that matches this
+				// route's scopes
+				currentGroup = api.Group(baseName)
+				currentGroup.Use(secure.AuthMiddleware(route.Scopes))
+			}
+
+			switch route.Verb {
+			case "GET":
+				currentGroup.GET(route.Path, route.Handler)
+			case "PATCH":
+				currentGroup.PATCH(route.Path, route.Handler)
+			case "POST":
+				currentGroup.POST(route.Path, route.Handler)
+			case "DELETE":
+				currentGroup.DELETE(route.Path, route.Handler)
+			}
 		}
 	}
 }
 
 func main() {
-	// Initialize the handlers with their associated paths
-	handlers := map[string]types.Handler{
+	// Initialize the resources with their associated paths
+	resources := map[string]types.Handler{
 		"/user/:token/command": &command.Command{
 			Table: "commands", Conn: rethink.RethinkConn},
 		"/user/:token/quote": &quote.Quote{
@@ -133,10 +149,7 @@ func main() {
 	api.POST("/user/:token/login", secure.Authenticator)
 
 	// Load the routes for the individual handlers
-	for baseRoute, handler := range handlers {
-		group := api.Group(baseRoute)
-		generateRoutes(handler, group)
-	}
+	generateRoutes(resources, api)
 
 	// Start up the Gin router on the configured port
 	router.Run(fmt.Sprintf(":%d", config.Server.Port))

@@ -9,6 +9,7 @@ import (
 	"github.com/CactusDev/Xerophi/rethink"
 	"github.com/CactusDev/Xerophi/user"
 	"github.com/CactusDev/Xerophi/util"
+	"github.com/gbrlsnchs/jwt"
 
 	"github.com/gin-gonic/gin"
 
@@ -115,4 +116,29 @@ func Authenticator(ctx *gin.Context) {
 		"token":     newToken,
 	}
 	ctx.JSON(http.StatusOK, response)
+}
+
+// AuthMiddleware handles authentication via the Authorization:Bearer header
+func AuthMiddleware(required []string) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		// Token required for this endpoint
+		endpointToken := html.EscapeString(ctx.Param("token"))
+
+		// Get the JWT object from the provided string
+		token, err := jwt.FromRequest(ctx.Request)
+		if err != nil {
+			util.NiceError(ctx, err, http.StatusForbidden)
+			return
+		}
+
+		// Validate the token against the required scopes for this endpoint
+		err = ValidateToken(token, endpointToken, required)
+		if err != nil {
+			util.NiceError(ctx, err, http.StatusForbidden)
+			return
+		}
+
+		// We made it past the checks, allow access to the protected endpoint
+		ctx.Next()
+	}
 }

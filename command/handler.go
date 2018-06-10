@@ -28,26 +28,28 @@ func (c *Command) Routes() []types.RouteDetails {
 	return []types.RouteDetails{
 		types.RouteDetails{
 			Enabled: true, Path: "", Verb: "GET",
-			Handler: c.GetAll, Scopes: []string{},
+			Handler: c.GetAll,
+			Scopes:  []string{},
 		},
 		types.RouteDetails{
 			Enabled: true, Path: "/:name", Verb: "GET",
-			Handler: c.GetSingle, Scopes: []string{},
+			Handler: c.GetSingle,
+			Scopes:  []string{},
 		},
 		types.RouteDetails{
 			Enabled: true, Path: "/:name", Verb: "PATCH",
 			Handler: c.Update,
-			Scopes:  []string{"manage"},
+			Scopes:  []string{"command:manage"},
 		},
 		types.RouteDetails{
 			Enabled: true, Path: "/:name", Verb: "POST",
 			Handler: c.Create,
-			Scopes:  []string{"create"},
+			Scopes:  []string{"command:create"},
 		},
 		types.RouteDetails{
 			Enabled: true, Path: "/:name", Verb: "DELETE",
 			Handler: c.Delete,
-			Scopes:  []string{"manage"},
+			Scopes:  []string{"command:manage"},
 		},
 	}
 }

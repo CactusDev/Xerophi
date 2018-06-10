@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/CactusDev/Xerophi/redis"
 	"github.com/gbrlsnchs/jwt"
 
 	log "github.com/sirupsen/logrus"
@@ -55,10 +54,9 @@ func ReadScope(scopeString string) []string {
 	return scopes
 }
 
-// ValidateToken takes a jwt.JWT object and returns an string for any errors
-// encountered or "" if there are none. Does not check with Redis if token is
-// active
-func ValidateToken(tok *jwt.JWT, reqToken string, scopes []string) string {
+// ValidateToken takes a jwt.JWT object and returns the error is any are
+// encountered. Does not check with Redis if token is active
+func ValidateToken(tok *jwt.JWT, reqToken string, scopes []string) error {
 	// The algorithim matches HS256
 	algValidate := jwt.AlgorithmValidator(jwt.MethodHS256)
 	// The token hasn't expired
@@ -70,7 +68,7 @@ func ValidateToken(tok *jwt.JWT, reqToken string, scopes []string) string {
 	// The scopes in the JWT token match the required scopes for the endpoint
 	scopeValidate := ScopeValidator(scopes)
 	// The token is currently active
-	activeValidate := ActiveValidator()
+	activeValidate := ActiveValidator(reqToken)
 
 	err := tok.Validate(
 		algValidate, expValidate, issueValidate, // Lib validators
@@ -90,25 +88,16 @@ func ValidateToken(tok *jwt.JWT, reqToken string, scopes []string) string {
 			log.Info("JWT Validation - Non-string scope in scopes")
 		case ErrWrongNumScopes:
 			log.Info("JWT Validation - Missing a required scope by len")
-		case ErrMissingToken:
+		case ErrMissingOrExpiredToken:
 			log.Info("JWT Validation - Token doesn't exist or has expired")
 		case ErrInternalError:
 			log.Error("Internal error happened. Fun stuff.")
+		default:
+			// It's a validation error, missing scopes
+			log.Error(err.Error())
 		}
-		return err.Error()
+		return err
 	}
 
-	return ""
-}
-
-// TokenActive checks with redis to see if the provided JWT token string is
-// still active for the provided user
-func TokenActive(user string, token string) bool {
-	redisToken, err := redis.RedisConn.Session.Get(user).Result()
-	if err != nil {
-		log.Error(err)
-		return false
-	}
-
-	return redisToken == token
+	return nil
 }

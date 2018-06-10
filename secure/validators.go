@@ -21,8 +21,8 @@ var (
 	ErrWrongNumScopes = errors.New("jwt: Missing required scopes")
 	// ErrInvalidScopes - Non-string scope was passed to ReadScope
 	ErrInvalidScopes = errors.New("jwt: Non-string scope in scopes")
-	// ErrMissingToken - Token doesn't exist/has expired
-	ErrMissingToken = errors.New("jwt: Token doesn't exist")
+	// ErrMissingOrExpiredToken - Token doesn't exist/has expired
+	ErrMissingOrExpiredToken = errors.New("jwt: Token doesn't exist or has expired")
 	// ErrInternalError - Some error occured in the parsing
 	ErrInternalError = errors.New("Internal error")
 )
@@ -84,14 +84,18 @@ func ScopeValidator(requiredScopes []string) jwt.ValidatorFunc {
 }
 
 // ActiveValidator validates whether the token is currently active
-func ActiveValidator() jwt.ValidatorFunc {
+func ActiveValidator(token string) jwt.ValidatorFunc {
 	return func(j *jwt.JWT) error {
 		// Check if the token exists in redis
-		if exists, err := redis.RedisConn.Exists(j.String()); err != nil {
+		redisToken, err := redis.RedisConn.Session.Get(token).Result()
+		if err != nil {
 			return ErrInternalError
-		} else if !exists {
-			return ErrMissingToken
 		}
+
+		if redisToken != j.String() {
+			return ErrMissingOrExpiredToken
+		}
+
 		return nil
 	}
 }
