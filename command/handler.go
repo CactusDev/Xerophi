@@ -28,23 +28,26 @@ func (c *Command) Routes() []types.RouteDetails {
 	return []types.RouteDetails{
 		types.RouteDetails{
 			Enabled: true, Path: "", Verb: "GET",
-			Handler: c.GetAll,
+			Handler: c.GetAll, Scopes: []string{},
 		},
 		types.RouteDetails{
 			Enabled: true, Path: "/:name", Verb: "GET",
-			Handler: c.GetSingle,
+			Handler: c.GetSingle, Scopes: []string{},
 		},
 		types.RouteDetails{
 			Enabled: true, Path: "/:name", Verb: "PATCH",
 			Handler: c.Update,
+			Scopes:  []string{"manage"},
 		},
 		types.RouteDetails{
 			Enabled: true, Path: "/:name", Verb: "POST",
 			Handler: c.Create,
+			Scopes:  []string{"create"},
 		},
 		types.RouteDetails{
 			Enabled: true, Path: "/:name", Verb: "DELETE",
 			Handler: c.Delete,
+			Scopes:  []string{"manage"},
 		},
 	}
 }
@@ -54,7 +57,7 @@ func (c *Command) ReturnOne(filter map[string]interface{}) (ResponseSchema, erro
 	var response ResponseSchema
 
 	// Retrieve a single record from the DB based on the filter
-	fromDB, err := c.Conn.GetSingle(filter, c.Table)
+	fromDB, err := c.Conn.GetSingle(c.Table, filter)
 	if err != nil {
 		return response, err
 	}

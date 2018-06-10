@@ -56,7 +56,7 @@ func (q *Quote) ReturnOne(filter map[string]interface{}) (ResponseSchema, error)
 	var response ResponseSchema
 
 	// Retrieve a single record from the DB based on the filter
-	fromDB, err := q.Conn.GetSingle(filter, q.Table)
+	fromDB, err := q.Conn.GetSingle(q.Table, filter)
 	if err != nil {
 		return response, err
 	}

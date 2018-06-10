@@ -3,6 +3,7 @@ package util
 import (
 	"errors"
 	"fmt"
+	"runtime"
 
 	"github.com/gin-gonic/gin"
 
@@ -50,7 +51,15 @@ func MapStringToInterface(vars map[string]string) map[string]interface{} {
 
 // NiceError factors away the erroring of a function into a clean single-line function call
 func NiceError(ctx *gin.Context, err error, code int) {
-	log.Error(err.Error())
+	_, file, no, ok := runtime.Caller(1)
+	if ok {
+		// Only log this way if it's working
+		log.WithField("calling", fmt.Sprintf("%s:%d", file, no)).Error(err.Error())
+	} else {
+		// Getting the calling function failed
+		log.WithField("calling", "NA").Error(err.Error())
+	}
+
 	errResp := map[string][]string{
 		"errors": []string{
 			err.Error(),

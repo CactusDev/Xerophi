@@ -3,6 +3,7 @@ package rethink
 import (
 	"math/rand"
 
+	log "github.com/sirupsen/logrus"
 	r "gopkg.in/gorethink/gorethink.v4"
 )
 
@@ -19,7 +20,7 @@ func (rr RetrievalResult) Error() string {
 }
 
 // GetSingle returns a single object from the current table via a filter key
-func (c *Connection) GetSingle(filter map[string]interface{}, table string) (interface{}, error) {
+func (c *Connection) GetSingle(table string, filter Filter) (interface{}, error) {
 	res, err := r.Table(table).Filter(filter).Run(c.Session)
 	if err != nil {
 		return nil, err
@@ -96,7 +97,7 @@ func (c *Connection) GetMultiple(table string, limit int) ([]interface{}, error)
 }
 
 // GetByFilter is like GetMultiple, except it has the ability to filter the results first
-func (c *Connection) GetByFilter(table string, filter map[string]interface{}, limit int) ([]interface{}, error) {
+func (c *Connection) GetByFilter(table string, filter Filter, limit int) ([]interface{}, error) {
 	query := r.Table(table)
 	if len(filter) > 0 {
 		query = query.Filter(filter)
@@ -126,7 +127,7 @@ func (c *Connection) GetByFilter(table string, filter map[string]interface{}, li
 }
 
 // GetRandom retrieves a single random record from the table given the filter
-func (c *Connection) GetRandom(table string, filter map[string]interface{}) (interface{}, error) {
+func (c *Connection) GetRandom(table string, filter Filter) (interface{}, error) {
 	response, err := c.GetByFilter(table, filter, 0)
 	if err != nil {
 		return nil, err
@@ -137,4 +138,18 @@ func (c *Connection) GetRandom(table string, filter map[string]interface{}) (int
 	}
 
 	return response[rand.Intn(len(response))], nil
+}
+
+// GetTotalRecords returns the total number of records in a table
+func (c *Connection) GetTotalRecords(table string, filter Filter) (int, error) {
+	res, err := r.Table(table).Filter(filter).Count().Run(c.Session)
+	if err != nil {
+		log.Error(err)
+		return 0, err
+	}
+
+	var response int
+	res.One(&response)
+
+	return response, nil
 }

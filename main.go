@@ -1,13 +1,13 @@
 package main
 
 import (
+	// Default lib imports
 	"flag"
 	"fmt"
 	"net/http"
 	"time"
 
-	// "github.com/go-redis/redis"
-
+	// Xerophi modules
 	"github.com/CactusDev/Xerophi/command"
 	"github.com/CactusDev/Xerophi/quote"
 	"github.com/CactusDev/Xerophi/redis"
@@ -15,8 +15,11 @@ import (
 	"github.com/CactusDev/Xerophi/secure"
 	"github.com/CactusDev/Xerophi/types"
 
+	// Gin imports
+	"github.com/appleboy/gin-jwt"
 	"github.com/gin-gonic/gin"
 
+	// Debug imports
 	debugFname "github.com/onrik/logrus/filename"
 	log "github.com/sirupsen/logrus"
 )
@@ -94,25 +97,6 @@ func generateRoutes(h types.Handler, g *gin.RouterGroup) {
 	}
 }
 
-// TODO: Look into using this in future to remove duplicate error catching code
-// func catchPanic(ctx *gin.Context) {
-// 	defer func(ctx *gin.Context) {
-// 		if rec := recover(); rec != nil {
-// 			err, ok := rec.(types.ServerError)
-// 			if !ok {
-// 				// We have an actual panic
-// 				log.Warn("Recovered from actual panic!")
-// 				log.Warn(errors.New(rec))
-// 				return
-// 			}
-// 			// We panic-d only purpose within the function, nicely handle that
-// 			util.NiceError(ctx, err.Error, err.Code)
-// 			return
-// 		}
-// 	}(ctx)
-// 	ctx.Next()
-// }
-
 func main() {
 	// Initialize the handlers with their associated paths
 	handlers := map[string]types.Handler{
@@ -120,11 +104,28 @@ func main() {
 		"/user/:token/quote":   &quote.Quote{Table: "quotes"},
 	}
 
-	// Initialize JWT auth middleware here
-
 	// Initialize the router
 	router := gin.Default()
 	api := router.Group("/api/v2")
+
+	// Initialize panic recovery middleware
+	router.Use(gin.Recovery())
+
+	// Initialize JWT auth middleware
+	jwtAuth := &jwt.GinJWTMiddleware{
+		// Realm name to display to user
+		Realm: "cactus.exoz.one",
+		// Secret key for signing
+		Key: []byte(config.Secure.Secret),
+		// Duration the JWT token is valid, 1 day (24 hours)
+		Timeout: time.Hour * 24,
+		// Maximum time during which the user can refresh their auth token
+		// Timeout + 12 hours
+		MaxRefresh: time.Hour * 12,
+		Authenticator: 
+	}
+
+	_ = jwtAuth
 
 	// Intialize the monitoring/status system
 	monitor := rethink.Status{
@@ -136,6 +137,7 @@ func main() {
 		},
 		LastUpdated: time.Now(),
 	}
+
 	// TODO: Add a monitor for Redis
 	monitor.Monitor(rethink.RethinkConn)
 	api.GET("/status", monitor.APIStatusHandler)

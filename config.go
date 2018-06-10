@@ -16,6 +16,7 @@ type Config struct {
 	Sentry  sentryCfg  `json:"sentry"`
 	Server  serverCfg  `json:"server"`
 	Redis   redisCfg   `json:"redis"`
+	Secure  secureCfg  `json:"secure"`
 }
 
 type rethinkCfg struct {
@@ -35,6 +36,10 @@ type redisCfg struct {
 
 type serverCfg struct {
 	Port int `json:"port"`
+}
+
+type secureCfg struct {
+	Secret string `json:"secret"`
 }
 
 // LoadConfig tries to load the config from the default path "./config.json"

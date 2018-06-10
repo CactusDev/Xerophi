@@ -18,11 +18,11 @@ type Schema interface {
 
 // RouteDetails gives us the info needed to automatically create handlers
 type RouteDetails struct {
-	Enabled bool
-	Handler gin.HandlerFunc
-	Path    string
-	Verb    string
-	// Protected secure.AuthDetails	// Information on whether authentication is required
+	Enabled bool            // Whether the function is enabled
+	Handler gin.HandlerFunc // Handler function
+	Path    string          // /:name/delete - Extension path off of group base
+	Verb    string          // GET/POST/PATCH/etc. - HTTP request verb
+	Scopes  []string        // Scopes required to interact with this endpoint
 }
 
 // Handler is the collection of methods required for a type to be a handler

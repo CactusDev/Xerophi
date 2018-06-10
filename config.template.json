@@ -22,5 +22,8 @@
     },
     "server": {
         "port": 8000
+    },
+    "secure": {
+        "secret": "supersecretsecretkey"
     }
 }

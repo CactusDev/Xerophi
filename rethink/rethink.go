@@ -9,6 +9,9 @@ var (
 	RethinkConn *Connection
 )
 
+// Filter is an alias to make argument lists smaller and clearer
+type Filter = map[string]interface{}
+
 // ConnectionOpts is what we need to connect to a RethinkDB server
 type ConnectionOpts struct {
 	Host     string `json:"host"`
@@ -28,17 +31,17 @@ type Connection struct {
 type Database interface {
 	Connect() error
 	Close() error
-	GetSingle(table string) (interface{}, error)
+	GetSingle(table string, filter Filter) (interface{}, error)
 	GetMultiple(table string, limit int) ([]interface{}, error)
 	GetAll(table string) ([]interface{}, error)
 	GetByUUID(table string, uid string) (interface{}, error)
-	GetByFilter(table string, filter map[string]interface{}, limit int) ([]interface{}, error)
-	GetRandom(table string, filter map[string]interface{}) (interface{}, error)
-	Update(table string, uid string, data map[string]interface{}) (interface{}, error)
-	Create(table string, data map[string]interface{}) (interface{}, error)
+	GetByFilter(table string, filter Filter, limit int) ([]interface{}, error)
+	GetRandom(table string, filter Filter) (interface{}, error)
+	Update(table string, uid string, data Filter) (interface{}, error)
+	Create(table string, data Filter) (interface{}, error)
 	Delete(table string, uid string) (interface{}, error)  // Hard deletion
 	Disable(table string, uid string) (interface{}, error) // Soft deletion
-	Exists(table string, filter map[string]interface{}) (interface{}, error)
+	Exists(table string, filter Filter) (interface{}, error)
 	Status(table string) (interface{}, error)
 }
 

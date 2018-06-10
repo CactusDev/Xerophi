@@ -1,18 +1,18 @@
 package secure
 
 import (
-	"html"
 	"net/http"
 	"strings"
 
-	"github.com/CactusDev/Xerophi/redis"
 	"github.com/CactusDev/Xerophi/rethink"
 	"github.com/CactusDev/Xerophi/user"
 	"github.com/CactusDev/Xerophi/util"
 
+	jwt "github.com/appleboy/gin-jwt"
 	"github.com/gin-gonic/gin"
 
 	mapstruct "github.com/mitchellh/mapstructure"
+	log "github.com/sirupsen/logrus"
 )
 
 // AuthError is an error object used for raising errors during authentication
@@ -33,11 +33,11 @@ type AuthRequestVals struct {
 
 // Non-exported helper function for determining if a user exists and if the
 // request password is correct
-func validateUser(token string, password string, ctx *gin.Context) (bool, error) {
+func validateUser(token string, password string) (bool, error) {
 	filter := map[string]interface{}{"token": token}
 
 	// Check if this requested user (by token) exists
-	fromDB, err := rethink.RethinkConn.GetSingle(filter, "users")
+	fromDB, err := rethink.RethinkConn.GetSingle("users", filter)
 	if err != nil {
 		return false, err
 	}
@@ -48,12 +48,18 @@ func validateUser(token string, password string, ctx *gin.Context) (bool, error)
 	}
 
 	// Put the response from the DB into an object
-	userVals := user.Database{}
+	var userVals user.Database
 	mapstruct.Decode(fromDB, &userVals)
 
 	// Verify the password against the retrieved hash
-	if !VerifyHash([]byte(userVals.Hash), password) {
-		// Failed hash verification
+	success, err := VerifyHash(userVals.Hash, password, userVals.Salt)
+	// An error occured, log it but don't show the users
+	if err != nil {
+		log.Error(err)
+		return false, AuthError{"Internal server error"}
+	}
+	// Failed hash verification
+	if !success {
 		return false, AuthError{"Invalid username or password"}
 	}
 
@@ -61,9 +67,12 @@ func validateUser(token string, password string, ctx *gin.Context) (bool, error)
 	return true, nil
 }
 
-// Login handles requests to /user/:token/login endpoint for authentication
-func Login(ctx *gin.Context) {
-	token := html.EscapeString(ctx.Param("token"))
+// Authenticator handles authentication requests for JWT auth
+func Authenticator(username string, password string, ctx *gin.Context) (interface{}, bool) {
+	if valid, err := validateUser(username, password); err != nil || !valid {
+		log.Error(err)
+		return nil, false
+	}
 
 	// Get the request values
 	requestVals := AuthRequestVals{}
@@ -71,33 +80,90 @@ func Login(ctx *gin.Context) {
 		util.NiceError(ctx, err, http.StatusBadRequest)
 	}
 
-	if valid, err := validateUser(token, requestVals.Password, ctx); err != nil {
-		util.NiceError(ctx, err, http.StatusBadRequest)
-		return
-	} else if !valid {
-		util.NiceError(
-			ctx, AuthError{"Invalid username or password"}, http.StatusBadRequest)
-		return
-	}
-
 	// Split the request scopes up into a slice of valid scope strings
 	scopes := ReadScope(strings.Join(requestVals.Scopes, ", "))
 
-	// Generate the new JWT token
-	jwtToken, err := GenToken(scopes, token, "testfoobar")
-	if err != nil {
-		util.NiceError(ctx, err, http.StatusInternalServerError)
-		return
-	}
-
-	// Store the newly generated JWT token
-	err = redis.CacheUserLogin(jwtToken)
-	if err != nil {
-		util.NiceError(ctx, err, http.StatusInternalServerError)
-		return
-	}
-
-	// Return the JWT token to the user
-	ctx.Header("X-Auth-New-Token", jwtToken)
-	ctx.JSON(http.StatusOK, nil)
+	// Success, return the valid scopes for use in the token
+	return map[string]interface{}{"scopes": scopes, "token": username}, true
 }
+
+// Authorizator handles the authorization of a request
+func Authorizator(vals interface{}, ctx *gin.Context) bool {
+	// Our Identity function should be returning a map
+	authVals, ok := vals.(map[string]interface{})
+	if !ok {
+		log.Error("Non-map vals for authorizator: ", vals)
+		return false
+	}
+
+	// Attempt to retrieve token from request
+	tokenVal, ok := authVals["token"]
+	if !ok {
+		// Token isn't a key in the auth data
+		log.Error("Missing token key")
+		return false
+	}
+	token, ok := tokenVal.(string)
+	if !ok {
+		// Token isn't a string
+		log.Error("Failed to convert token to string")
+		return false
+	}
+
+	// Attempt to retrieve scopes from request
+	scopesVal, ok := authVals["scopes"]
+	if !ok {
+		// Token isn't a key in the auth data
+		log.Error("Missing scopes key")
+		return false
+	}
+	scopes, ok := scopesVal.([]string)
+	if !ok {
+		// Token isn't a string
+		log.Error("Failed to convert scopes to list of strings")
+		return false
+	}
+
+	// Verify this is a currently active token
+
+	// Verify the scopes in the token match the required ones for the endpoint
+
+	return true
+}
+
+// Payload handles the filling of the token's claims, in this case the scopes
+func Payload(data interface{}) jwt.MapClaims {
+	// Should always be in this form
+	claimsData, ok := data.(map[string]interface{})
+	if !ok {
+		// Don't want authentication to complete if the data is somehow invalid
+		// So Fatal to panic and then have our middleware recover it for us
+		log.WithField("data", data).Fatal("Failed to assert correct type during payload prep")
+		// Well that's ... odd
+		return jwt.MapClaims{}
+	}
+
+	scopes, ok := claimsData["scopes"].([]string)
+	if !ok {
+		// Don't want authentication to complete if the data is somehow invalid
+		// So Fatal to panic and then have our middleware recover it for us
+		log.WithField("scopes", claimsData).Fatal("Failed to assert correct type during payload prep")
+		// Well that's ... odd
+		return jwt.MapClaims{}
+	}
+
+	token, ok := claimsData["token"].(string)
+	if !ok {
+		// Don't want authentication to complete if the data is somehow invalid
+		// So Fatal to panic and then have our middleware recover it for us
+		log.WithField("scopes", claimsData).Fatal("Failed to assert correct type during payload prep")
+		// Well that's ... odd
+		return jwt.MapClaims{}
+	}
+
+	return jwt.MapClaims{"scopes": scopes, "token": token}
+}
+
+// Identity handles parsing the claims and setting the values we'll need
+// for confirming if the user has the correct scopes to access the endpoint
+func Identity()
