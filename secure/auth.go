@@ -15,6 +15,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Claims is an alias to make code clearer/more understandable
+type Claims = map[string]interface{}
+
 // AuthError is an error object used for raising errors during authentication
 type AuthError struct {
 	Message string
@@ -84,29 +87,31 @@ func Authenticator(username string, password string, ctx *gin.Context) (interfac
 	scopes := ReadScope(strings.Join(requestVals.Scopes, ", "))
 
 	// Success, return the valid scopes for use in the token
-	return map[string]interface{}{"scopes": scopes, "token": username}, true
+	return Claims{"scopes": scopes, "token": username}, true
 }
 
 // Authorizator handles the authorization of a request
 func Authorizator(vals interface{}, ctx *gin.Context) bool {
 	// Our Identity function should be returning a map
-	authVals, ok := vals.(map[string]interface{})
+	authVals, ok := vals.(Claims)
 	if !ok {
 		log.Error("Non-map vals for authorizator: ", vals)
 		return false
 	}
 
-	// Attempt to retrieve token from request
-	tokenVal, ok := authVals["token"]
+	// Make sure this data is valid
+
+	// Attempt to retrieve username from request
+	usernameVal, ok := authVals["username"]
 	if !ok {
 		// Token isn't a key in the auth data
-		log.Error("Missing token key")
+		log.Error("Missing username key")
 		return false
 	}
-	token, ok := tokenVal.(string)
+	username, ok := usernameVal.(string)
 	if !ok {
 		// Token isn't a string
-		log.Error("Failed to convert token to string")
+		log.Error("Failed to convert username to string")
 		return false
 	}
 
@@ -134,7 +139,7 @@ func Authorizator(vals interface{}, ctx *gin.Context) bool {
 // Payload handles the filling of the token's claims, in this case the scopes
 func Payload(data interface{}) jwt.MapClaims {
 	// Should always be in this form
-	claimsData, ok := data.(map[string]interface{})
+	claimsData, ok := data.(Claims)
 	if !ok {
 		// Don't want authentication to complete if the data is somehow invalid
 		// So Fatal to panic and then have our middleware recover it for us
@@ -152,7 +157,7 @@ func Payload(data interface{}) jwt.MapClaims {
 		return jwt.MapClaims{}
 	}
 
-	token, ok := claimsData["token"].(string)
+	username, ok := claimsData["username"].(string)
 	if !ok {
 		// Don't want authentication to complete if the data is somehow invalid
 		// So Fatal to panic and then have our middleware recover it for us
@@ -161,9 +166,25 @@ func Payload(data interface{}) jwt.MapClaims {
 		return jwt.MapClaims{}
 	}
 
-	return jwt.MapClaims{"scopes": scopes, "token": token}
+	return jwt.MapClaims{"scopes": scopes, "username": username}
 }
 
 // Identity handles parsing the claims and setting the values we'll need
 // for confirming if the user has the correct scopes to access the endpoint
-func Identity()
+func Identity(claims jwt.MapClaims) interface{} {
+	// Attempt to get username and scopes from claim
+	username, ok := claims["username"]
+	if !ok {
+		log.Error("Missing username in JWT token")
+		// No values will cause validation failure
+		return Claims{}
+	}
+	scopes, ok := claims["scopes"]
+	if !ok {
+		log.Error("Missing scopes in JWT token")
+		// No values will cause validation failure
+		return Claims{}
+	}
+
+	return Claims{"username": username, "scopes": scopes}
+}
