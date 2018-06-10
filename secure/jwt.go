@@ -12,20 +12,29 @@ import (
 )
 
 // Functions and data related to the generation and validation of tokens
+var secret string
+
+// SetSecret sets the module-wide local variable for keeping track of the secret
+// which is used for JWT token generation
+func SetSecret(setSecret string) {
+	secret = setSecret
+}
 
 // GenToken takes the scopes and other information needed to generate the
-// JWT and returns a JWT
-func GenToken(scopes []string, token string, secret string) (string, error) {
-	return jwt.Sign(
-		jwt.HS256(string(secret)),
+// JWT and returns a JWT and when it expires
+func GenToken(scopes []string, token string) (string, string, error) {
+	expr := time.Now().AddDate(0, 0, 7) // Expires in a week
+	token, err := jwt.Sign(
+		jwt.HS256(secret),
 		&jwt.Options{
-			ExpirationTime: time.Now().AddDate(0, 0, 7), // Expires in a week
+			ExpirationTime: expr,
 			Timestamp:      true,
 			Public: map[string]interface{}{
 				"token":  token,
 				"scopes": scopes,
 			},
 		})
+	return token, expr.String(), err
 }
 
 // ReadScope reads in a string of scopes in the format "table:[manage/create],
@@ -93,13 +102,13 @@ func ValidateToken(tok *jwt.JWT, reqToken string, scopes []string) string {
 }
 
 // TokenActive checks with redis to see if the provided JWT token string is
-// still active
-func TokenActive(token string) (bool, error) {
-	exists, err := redis.RedisConn.Exists(fmt.Sprintf("activeTokens:%s", token))
+// still active for the provided user
+func TokenActive(user string, token string) bool {
+	redisToken, err := redis.RedisConn.Session.Get(user).Result()
 	if err != nil {
 		log.Error(err)
-		return false, nil
+		return false
 	}
 
-	return exists, nil
+	return redisToken == token
 }

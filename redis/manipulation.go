@@ -25,7 +25,7 @@ func CacheUserLogin(keyString string) error {
 	// Add the JWT token to Redis under the token key, expiring in the future
 	err = RedisConn.Session.Set(
 		key.Public()["token"].(string),
-		key.String(),
+		keyString,
 		-time.Since(key.ExpirationTime()),
 	).Err()
 

@@ -16,7 +16,7 @@ import (
 	"github.com/CactusDev/Xerophi/types"
 
 	// Gin imports
-	"github.com/appleboy/gin-jwt"
+
 	"github.com/gin-gonic/gin"
 
 	// Debug imports
@@ -100,8 +100,10 @@ func generateRoutes(h types.Handler, g *gin.RouterGroup) {
 func main() {
 	// Initialize the handlers with their associated paths
 	handlers := map[string]types.Handler{
-		"/user/:token/command": &command.Command{Table: "commands"},
-		"/user/:token/quote":   &quote.Quote{Table: "quotes"},
+		"/user/:token/command": &command.Command{
+			Table: "commands", Conn: rethink.RethinkConn},
+		"/user/:token/quote": &quote.Quote{
+			Table: "quotes", Conn: rethink.RethinkConn},
 	}
 
 	// Initialize the router
@@ -110,22 +112,6 @@ func main() {
 
 	// Initialize panic recovery middleware
 	router.Use(gin.Recovery())
-
-	// Initialize JWT auth middleware
-	jwtAuth := &jwt.GinJWTMiddleware{
-		// Realm name to display to user
-		Realm: "cactus.exoz.one",
-		// Secret key for signing
-		Key: []byte(config.Secure.Secret),
-		// Duration the JWT token is valid, 1 day (24 hours)
-		Timeout: time.Hour * 24,
-		// Maximum time during which the user can refresh their auth token
-		// Timeout + 12 hours
-		MaxRefresh: time.Hour * 12,
-		Authenticator: 
-	}
-
-	_ = jwtAuth
 
 	// Intialize the monitoring/status system
 	monitor := rethink.Status{
@@ -138,10 +124,13 @@ func main() {
 		LastUpdated: time.Now(),
 	}
 
+	// Initialize JWT authentication
+	secure.SetSecret(config.Secure.Secret)
+
 	// TODO: Add a monitor for Redis
 	monitor.Monitor(rethink.RethinkConn)
 	api.GET("/status", monitor.APIStatusHandler)
-	api.POST("/user/:token/login", secure.Login)
+	api.POST("/user/:token/login", secure.Authenticator)
 
 	// Load the routes for the individual handlers
 	for baseRoute, handler := range handlers {

@@ -9,12 +9,12 @@ import (
 
 func TestGenToken(t *testing.T) {
 	// TODO: Add more tests for this
+	SetSecret("secret")
 	now := time.Now().Format("2006-01-02 15:04:05 -0700 MST")
 	expiration := time.Now().AddDate(0, 0, 7).Format("2006-01-02 15:04:05 -0700 MST")
 	token := "testing"
-	secret := "testSecret"
 	scopes := []string{"commands:add", "quotes:manage", "user:manage"}
-	jwtTok, err := GenToken(scopes, token, secret)
+	jwtTok, expr, err := GenToken(scopes, token)
 	if err != nil {
 		t.Error("Unexpected error in token generation")
 	}
@@ -28,6 +28,10 @@ func TestGenToken(t *testing.T) {
 	if tok.ExpirationTime().String() != expiration {
 		t.Errorf("Invalid expiration date. Expecting %sm got %s",
 			expiration, tok.ExpirationTime())
+	}
+	if tok.ExpirationTime().String() != expr {
+		t.Errorf("Invalid expiration date. Expecting %sm got %s",
+			expr, tok.ExpirationTime())
 	}
 	if tok.IssuedAt().String() != now {
 		t.Errorf("Invalid timestamp. Expecting %s, got %s", now, tok.IssuedAt())
