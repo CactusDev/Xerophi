@@ -65,7 +65,7 @@ func ValidateAndMap(in io.Reader, schemaPath string, schema types.Schema) (map[s
 // ValidateInput valids the data provided against the provided JSON schema
 // Will only return an error if there's a problem with the data
 func ValidateInput(source []byte, schema string) error {
-	var errors APIError
+	errors := APIError{Data: make(map[string]interface{})}
 
 	path, err := os.Getwd()
 	if err != nil {

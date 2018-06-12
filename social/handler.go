@@ -17,7 +17,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Social is the struct that implements the handler interface for the command resource
+// Social is the struct that implements the handler interface for the social resource
 type Social struct {
 	Conn  *rethink.Connection // The RethinkDB connection
 	Table string              // The database table we're using
@@ -183,7 +183,7 @@ func (c *Social) Create(ctx *gin.Context) {
 	// No records already exist that match, go ahead with creation
 	// Passed validation, put in the user data & prepare the data we're using
 	createData, err := util.ValidateAndMap(
-		ctx.Request.Body, "/command/createSchema.json", createVals)
+		ctx.Request.Body, "/social/createSchema.json", createVals)
 
 	if validateErr, ok := err.(util.APIError); !ok && err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
@@ -191,6 +191,7 @@ func (c *Social) Create(ctx *gin.Context) {
 	} else if ok {
 		// It's a validation error
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, validateErr.Data)
+		return
 	}
 
 	// Attempt to create the new resource
@@ -233,7 +234,7 @@ func (c *Social) Update(ctx *gin.Context) {
 	// Passed validation, put in the user data & prepare the data we're using
 	var updateVals UpdateSchema
 	updateData, err := util.ValidateAndMap(
-		ctx.Request.Body, "/command/schema.json", updateVals)
+		ctx.Request.Body, "/social/schema.json", updateVals)
 
 	if validateErr, ok := err.(util.APIError); !ok && err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
