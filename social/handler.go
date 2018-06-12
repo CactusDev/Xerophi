@@ -242,6 +242,7 @@ func (c *Social) Update(ctx *gin.Context) {
 	} else if ok {
 		// It's a validation error
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, validateErr.Data)
+		return
 	}
 
 	// Attempt to update the new resource

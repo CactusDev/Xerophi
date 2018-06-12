@@ -1,4 +1,4 @@
-package command
+package trust
 
 import (
 	"fmt"
@@ -17,14 +17,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Command is the struct that implements the handler interface for the command resource
-type Command struct {
+// Trust is the struct that implements the handler interface for the trust resource
+type Trust struct {
 	Conn  *rethink.Connection // The RethinkDB connection
 	Table string              // The database table we're using
 }
 
 // Routes returns the routing information for this endpoint
-func (c *Command) Routes() []types.RouteDetails {
+func (c *Trust) Routes() []types.RouteDetails {
 	return []types.RouteDetails{
 		types.RouteDetails{
 			Enabled: true, Path: "", Verb: "GET",
@@ -32,30 +32,30 @@ func (c *Command) Routes() []types.RouteDetails {
 			Scopes:  []string{},
 		},
 		types.RouteDetails{
-			Enabled: true, Path: "/:name", Verb: "GET",
+			Enabled: true, Path: "/:userID", Verb: "GET",
 			Handler: c.GetSingle,
 			Scopes:  []string{},
 		},
 		types.RouteDetails{
-			Enabled: true, Path: "/:name", Verb: "PATCH",
+			Enabled: true, Path: "/:userID", Verb: "PATCH",
 			Handler: c.Update,
-			Scopes:  []string{"command:manage"},
+			Scopes:  []string{"trust:manage"},
 		},
 		types.RouteDetails{
-			Enabled: true, Path: "/:name", Verb: "POST",
+			Enabled: true, Path: "/:userID", Verb: "POST",
 			Handler: c.Create,
-			Scopes:  []string{"command:create"},
+			Scopes:  []string{"trust:create"},
 		},
 		types.RouteDetails{
-			Enabled: true, Path: "/:name", Verb: "DELETE",
+			Enabled: true, Path: "/:userID", Verb: "DELETE",
 			Handler: c.Delete,
-			Scopes:  []string{"command:manage"},
+			Scopes:  []string{"trust:manage"},
 		},
 	}
 }
 
 // ReturnOne retrieves a single record given the filter provided
-func (c *Command) ReturnOne(filter map[string]interface{}) (ResponseSchema, error) {
+func (c *Trust) ReturnOne(filter map[string]interface{}) (ResponseSchema, error) {
 	var response ResponseSchema
 
 	// Retrieve a single record from the DB based on the filter
@@ -83,7 +83,7 @@ func (c *Command) ReturnOne(filter map[string]interface{}) (ResponseSchema, erro
 }
 
 // GetAll returns all records associated with the token
-func (c *Command) GetAll(ctx *gin.Context) {
+func (c *Trust) GetAll(ctx *gin.Context) {
 	token := strings.ToLower(html.EscapeString(ctx.Param("token")))
 	filter := map[string]interface{}{"token": token}
 	fromDB, err := c.Conn.GetByFilter(c.Table, filter, 0)
@@ -120,10 +120,10 @@ func (c *Command) GetAll(ctx *gin.Context) {
 }
 
 // GetSingle returns a single record
-func (c *Command) GetSingle(ctx *gin.Context) {
+func (c *Trust) GetSingle(ctx *gin.Context) {
 	token := html.EscapeString(ctx.Param("token"))
-	name := html.EscapeString(ctx.Param("name"))
-	filter := map[string]interface{}{"token": token, "name": name}
+	userID := html.EscapeString(ctx.Param("userID"))
+	filter := map[string]interface{}{"token": token, "userId": userID}
 
 	res, err := c.ReturnOne(filter)
 	retRes, ok := err.(rethink.RetrievalResult)
@@ -146,20 +146,20 @@ func (c *Command) GetSingle(ctx *gin.Context) {
 }
 
 // Create creates a new record
-func (c *Command) Create(ctx *gin.Context) {
+func (c *Trust) Create(ctx *gin.Context) {
 	// Declare default values
 	createVals := CreationSchema{
+		Active:    true,
 		CreatedAt: time.Now().UTC(),
 		DeletedAt: 0,
 		Token:     strings.ToLower(html.EscapeString(ctx.Param("token"))),
-		Name:      html.EscapeString(ctx.Param("name")),
-		Enabled:   true,
+		UserID:    html.EscapeString(ctx.Param("userID")),
 	}
 
 	// TODO: Could this be check pulled out into a decorator/middleware of sorts?
 	// Do an initial check if it exists
 	filter := map[string]interface{}{
-		"token": createVals.Token, "name": createVals.Name}
+		"token": createVals.Token, "userId": createVals.UserID}
 	res, err := c.ReturnOne(filter)
 
 	// Check if it's a RetrievalResult, or an actual error
@@ -184,7 +184,7 @@ func (c *Command) Create(ctx *gin.Context) {
 	// No records already exist that match, go ahead with creation
 	// Passed validation, put in the user data & prepare the data we're using
 	createData, err := util.ValidateAndMap(
-		ctx.Request.Body, "/command/createSchema.json", createVals)
+		ctx.Request.Body, "/trust/createSchema.json", createVals)
 
 	if validateErr, ok := err.(util.APIError); !ok && err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
@@ -192,6 +192,7 @@ func (c *Command) Create(ctx *gin.Context) {
 	} else if ok {
 		// It's a validation error
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, validateErr.Data)
+		return
 	}
 
 	// Attempt to create the new resource
@@ -213,13 +214,13 @@ func (c *Command) Create(ctx *gin.Context) {
 }
 
 // Update handles the updating of a record if the record exists
-func (c *Command) Update(ctx *gin.Context) {
+func (c *Trust) Update(ctx *gin.Context) {
 	// Get the data we need from the request
 	token := strings.ToLower(html.EscapeString(ctx.Param("token")))
-	name := html.EscapeString(ctx.Param("name"))
+	userID := html.EscapeString(ctx.Param("userID"))
 
 	// Check if the resource that we want to edit exists
-	filter := map[string]interface{}{"token": token, "name": name}
+	filter := map[string]interface{}{"token": token, "userId": userID}
 	resp, err := c.ReturnOne(filter)
 	if retRes, ok := err.(rethink.RetrievalResult); !ok && err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
@@ -234,7 +235,7 @@ func (c *Command) Update(ctx *gin.Context) {
 	// Passed validation, put in the user data & prepare the data we're using
 	var updateVals UpdateSchema
 	updateData, err := util.ValidateAndMap(
-		ctx.Request.Body, "/command/schema.json", updateVals)
+		ctx.Request.Body, "/trust/schema.json", updateVals)
 
 	if validateErr, ok := err.(util.APIError); !ok && err != nil {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
@@ -266,10 +267,10 @@ func (c *Command) Update(ctx *gin.Context) {
 }
 
 // Delete soft-deletes a record
-func (c *Command) Delete(ctx *gin.Context) {
+func (c *Trust) Delete(ctx *gin.Context) {
 	token := html.EscapeString(ctx.Param("token"))
-	name := html.EscapeString(ctx.Param("name"))
-	filter := map[string]interface{}{"token": token, "name": name}
+	userID := html.EscapeString(ctx.Param("userID"))
+	filter := map[string]interface{}{"token": token, "userId": userID}
 	resp, err := c.Conn.GetByFilter(c.Table, filter, 1)
 
 	if err != nil {

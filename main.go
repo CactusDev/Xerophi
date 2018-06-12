@@ -8,13 +8,16 @@ import (
 	"time"
 
 	// Xerophi modules
-	"github.com/CactusDev/Xerophi/command"
-	"github.com/CactusDev/Xerophi/quote"
 	"github.com/CactusDev/Xerophi/redis"
 	"github.com/CactusDev/Xerophi/rethink"
 	"github.com/CactusDev/Xerophi/secure"
-	"github.com/CactusDev/Xerophi/social"
 	"github.com/CactusDev/Xerophi/types"
+
+	// Endpoints
+	"github.com/CactusDev/Xerophi/command"
+	"github.com/CactusDev/Xerophi/quote"
+	"github.com/CactusDev/Xerophi/social"
+	"github.com/CactusDev/Xerophi/trust"
 
 	// Gin imports
 
@@ -123,6 +126,8 @@ func main() {
 			Table: "quotes", Conn: rethink.RethinkConn},
 		"/user/:token/social": &social.Social{
 			Table: "socials", Conn: rethink.RethinkConn},
+		"/user/:token/trust": &trust.Trust{
+			Table: "trusts", Conn: rethink.RethinkConn},
 	}
 
 	// Initialize the router
@@ -138,6 +143,7 @@ func main() {
 			"commands": {},
 			"quotes":   {},
 			"socials":  {},
+			"trusts":   {},
 		},
 		DBs: map[string]struct{}{
 			"cactus": {},
