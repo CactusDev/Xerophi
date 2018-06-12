@@ -115,7 +115,7 @@ func (q *Quote) GetAll(ctx *gin.Context) {
 
 	response["data"] = decoded
 
-	ctx.Header("x-total-count", fmt.Sprint(len(decoded)))
+	ctx.Header("X-Total-Count", fmt.Sprint(len(decoded)))
 	ctx.JSON(http.StatusOK, response)
 }
 
@@ -145,7 +145,7 @@ func (q *Quote) GetSingle(ctx *gin.Context) {
 	}
 
 	if retRes.Success && !retRes.SoftDeleted {
-		ctx.Header("x-total-count", "1")
+		ctx.Header("X-Total-Count", "1")
 		ctx.JSON(http.StatusOK, util.MarshalResponse(res))
 		return
 	}
@@ -174,7 +174,7 @@ func (q *Quote) GetRandom(ctx *gin.Context) {
 		util.NiceError(ctx, err, http.StatusInternalServerError)
 		return
 	}
-	ctx.Header("x-total-count", "1")
+	ctx.Header("X-Total-Count", "1")
 	ctx.JSON(http.StatusOK, util.MarshalResponse(resp))
 	return
 }
@@ -243,7 +243,7 @@ func (q *Quote) Create(ctx *gin.Context) {
 	}
 
 	// Aaaand success
-	ctx.Header("x-total-count", "1")
+	ctx.Header("X-Total-Count", "1")
 	ctx.JSON(http.StatusCreated, util.MarshalResponse(res))
 }
 
@@ -301,7 +301,7 @@ func (q *Quote) Update(ctx *gin.Context) {
 	}
 
 	// Success
-	ctx.Header("x-total-count", "1")
+	ctx.Header("X-Total-Count", "1")
 	ctx.JSON(http.StatusOK, util.MarshalResponse(response))
 }
 
@@ -343,6 +343,6 @@ func (q *Quote) Delete(ctx *gin.Context) {
 	}
 
 	// Success
-	ctx.Header("x-resource-id-removed", rs["id"].(string))
+	ctx.Header("X-Resource-ID-Removed", rs["id"].(string))
 	ctx.Status(http.StatusOK)
 }

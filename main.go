@@ -13,6 +13,7 @@ import (
 	"github.com/CactusDev/Xerophi/redis"
 	"github.com/CactusDev/Xerophi/rethink"
 	"github.com/CactusDev/Xerophi/secure"
+	"github.com/CactusDev/Xerophi/social"
 	"github.com/CactusDev/Xerophi/types"
 
 	// Gin imports
@@ -120,6 +121,8 @@ func main() {
 			Table: "commands", Conn: rethink.RethinkConn},
 		"/user/:token/quote": &quote.Quote{
 			Table: "quotes", Conn: rethink.RethinkConn},
+		"/user/:token/social": &social.Social{
+			Table: "socials", Conn: rethink.RethinkConn},
 	}
 
 	// Initialize the router
@@ -133,6 +136,8 @@ func main() {
 	monitor := rethink.Status{
 		Tables: map[string]struct{}{
 			"commands": {},
+			"quotes":   {},
+			"socials":  {},
 		},
 		DBs: map[string]struct{}{
 			"cactus": {},
