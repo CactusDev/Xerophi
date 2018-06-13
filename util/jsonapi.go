@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/CactusDev/Xerophi/rethink"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -84,9 +86,55 @@ func pullVals(ift reflect.Type, ifv reflect.Value) (map[string]interface{}, map[
 			case "attr":
 				// Attribute
 				attr[split[1]] = value
+
+			case "ref":
+				// It's a UUID reference to a record in another table
+
+				// Make sure value is an actual value
+				uuid, _ := value.(string)
+
+				// UUID is the value, split[2] is the third member in the jsonapi tag
+				// and is the table to look in
+				res, err := rethink.RethinkConn.GetByUUID(uuid, split[2])
+				// Log if it's nil
+				if res == nil {
+					log.WithField("table", split[2]).WithField("uuid", uuid).Error("Unable to join by UUID")
+				}
+				// Log the error if it exists
+				if err != nil {
+					log.Error(err)
+				}
+
+				// If the resource has been soft-deleted don't include it
+				if rethink.IsSoftDeleted(res) {
+					res = nil
+				}
+
+				// Remove any ignored keys if there are any ignored in the schema tags
+				if len(split) > 3 && res != nil {
+					mapped, ok := res.(map[string]interface{})
+					if ok {
+						// Either the key doesn't exist or deletedAt is 0
+						// Only can remove keys if it's a map
+						// Get all values after split[2], these are the keys we're ignoring
+						for _, ignoredKey := range split[3:] {
+							delete(mapped, ignoredKey)
+						}
+
+						// Set the return value equal to the "redacted" record
+						res = mapped
+					} else {
+						log.WithField("table", split[2]).WithField("uuid", uuid).Warn("Tried to remove keys from non-map object")
+					}
+				}
+
+				// Set the key to the retrieved value
+				attr[split[1]] = res
+
 			case "meta":
 				// Meta information about the request
 				meta[split[1]] = value
+
 			case "primary":
 				// It's the primary key/record ID & record type
 				id = ifv.Field(i).String()

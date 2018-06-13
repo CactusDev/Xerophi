@@ -16,6 +16,7 @@ import (
 	// Endpoints
 	"github.com/CactusDev/Xerophi/command"
 	"github.com/CactusDev/Xerophi/quote"
+	"github.com/CactusDev/Xerophi/repeat"
 	"github.com/CactusDev/Xerophi/social"
 	"github.com/CactusDev/Xerophi/trust"
 
@@ -128,6 +129,8 @@ func main() {
 			Table: "socials", Conn: rethink.RethinkConn},
 		"/user/:token/trust": &trust.Trust{
 			Table: "trusts", Conn: rethink.RethinkConn},
+		"/user/:token/repeat": &repeat.Repeat{
+			Table: "repeats", Conn: rethink.RethinkConn},
 	}
 
 	// Initialize the router
@@ -144,6 +147,7 @@ func main() {
 			"quotes":   {},
 			"socials":  {},
 			"trusts":   {},
+			"repeats":  {},
 		},
 		DBs: map[string]struct{}{
 			"cactus": {},

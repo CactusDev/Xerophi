@@ -28,10 +28,6 @@ func (c *Connection) GetSingle(table string, filter Filter) (interface{}, error)
 	var response interface{}
 	res.One(&response)
 
-	if response == nil {
-		return response, nil
-	}
-
 	// Probably want retrieval logic to be pure and not deal with any of these
 	// checks
 	// if response.(map[string]interface{})["deletedAt"].(float64) != 0 {
@@ -51,11 +47,6 @@ func (c *Connection) GetByUUID(uuid string, table string) (interface{}, error) {
 	}
 	var response interface{}
 	res.One(&response)
-
-	if response.(map[string]interface{})["deletedAt"].(float64) != 0 {
-		// Don't include anything that has a non-zero deletedAt (soft deleted)
-		return response, RetrievalResult{true, true, "Requested UUID is soft-deleted"}
-	}
 
 	return response, nil
 }
@@ -152,4 +143,24 @@ func (c *Connection) GetTotalRecords(table string, filter Filter) (int, error) {
 	res.One(&response)
 
 	return response, nil
+}
+
+// IsSoftDeleted checks whether the supplied record's deletedAt key is non-zero
+func IsSoftDeleted(record interface{}) bool {
+	mapped, ok := record.(map[string]interface{})
+	if !ok {
+		// Not a map, so can't be soft-deleted ¯\_(ツ)_/¯
+		return false
+	}
+
+	deletedAt, ok := mapped["deletedAt"]
+	if ok {
+		// deletedAt key exists, go ahead with check
+		val, ok := deletedAt.(float64)
+		// deletedAt was converted -> float64 and was non-zero => soft-deleted
+		return ok && val != 0.0
+	}
+
+	// Didn't pass conversion tests
+	return false
 }
