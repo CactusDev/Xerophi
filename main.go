@@ -19,6 +19,7 @@ import (
 	"github.com/CactusDev/Xerophi/repeat"
 	"github.com/CactusDev/Xerophi/social"
 	"github.com/CactusDev/Xerophi/trust"
+	"github.com/CactusDev/Xerophi/user"
 
 	// Gin imports
 
@@ -131,6 +132,8 @@ func main() {
 			Table: "trusts", Conn: rethink.RethinkConn},
 		"/user/:token/repeat": &repeat.Repeat{
 			Table: "repeats", Conn: rethink.RethinkConn},
+		"/user/:token": &user.User{
+			Table: "users", Conn: rethink.RethinkConn},
 	}
 
 	// Initialize the router

@@ -1,0 +1,111 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "file:///home/nate/go/src/github.com/CactusDev/Xerophi/user/schema.json",
+  "description": "The update schema for the user endpoint (config)",
+  "type": "object",
+  "definitions": {
+    "settingGroup": {
+      "type": "object",
+      "properties": {
+          "action": {
+            "type": "string",
+            "$comment": "The action field must be any one of the following",
+            "enum": [
+              "purge", "none", "ban", "timeout"
+            ]
+          },
+          "value": {
+            "type": "integer",
+            "$comment": "Represents how many messages to purge, or how long to timeout for"
+          },
+          "warnings": { "type": "integer" }
+        }
+    }
+  },
+  "properties": {
+    "announce": {
+      "type": "object",
+      "properties": {
+        "follow": {
+          "type": "object",
+          "properties": {
+            "announce": { "type": "boolean" },
+            "message": { "type": "string" }
+          }
+        },
+        "host": {
+          "type": "object",
+          "properties": {
+            "announce": { "type": "boolean" },
+            "message": { "type": "string" }
+          }
+        },
+        "join": {
+          "type": "object",
+          "properties": {
+            "announce": { "type": "boolean" },
+            "message": { "type": "string" }
+          }
+        },
+        "leave": {
+          "type": "object",
+          "properties": {
+            "announce": { "type": "boolean" },
+            "message": { "type": "string" }
+          }
+        },
+        "sub": {
+          "type": "object",
+          "properties": {
+            "announce": { "type": "boolean" },
+            "message": { "type": "string" }
+          }
+        }
+      }
+    },
+    "services": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "isOAuth": { "type": "boolean" },
+          "name": { "type": "string" },
+          "permissions": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "username": { "type": "string" }
+        }
+      }
+    },
+    "spam": {
+      "type": "object",
+      "properties": {
+        "allowLinks": { "type": "boolean" },
+        "allowUrls": { "$ref": "#/definitions/settingGroup" }
+      },
+      "autoTimeout": { "type": "boolean" },
+      "blacklist": {
+        "type": "array",
+        "items": { "type": "string" }
+      },
+      "whitelist": {
+        "type": "array",
+        "items": { "type": "string" }
+      },
+      "maxCapsScore": { "$ref": "#/definitions/settingGroup" },
+      "maxEmoji": { "$ref": "#/definitions/settingGroup" },
+      "notifyMod": {
+        "notify": { "type": "boolean" },
+        "userNames": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "whitelistedUrls": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}
