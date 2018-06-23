@@ -226,6 +226,7 @@ func (q *Quote) Create(ctx *gin.Context) {
 	} else if ok {
 		// It's a validation error
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, validateErr.Data)
+		return
 	}
 
 	// Attempt to create the new resource

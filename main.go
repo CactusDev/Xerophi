@@ -14,6 +14,7 @@ import (
 	"github.com/CactusDev/Xerophi/types"
 
 	// Endpoints
+	"github.com/CactusDev/Xerophi/alias"
 	"github.com/CactusDev/Xerophi/command"
 	"github.com/CactusDev/Xerophi/quote"
 	"github.com/CactusDev/Xerophi/repeat"
@@ -22,7 +23,6 @@ import (
 	"github.com/CactusDev/Xerophi/user"
 
 	// Gin imports
-
 	"github.com/gin-gonic/gin"
 
 	// Debug imports
@@ -134,6 +134,8 @@ func main() {
 			Table: "repeats", Conn: rethink.RethinkConn},
 		"/user/:token": &user.User{
 			Table: "users", Conn: rethink.RethinkConn},
+		"/user/:token/alias": &alias.Alias{
+			Table: "aliases", Conn: rethink.RethinkConn},
 	}
 
 	// Initialize the router

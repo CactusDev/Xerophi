@@ -1,0 +1,17 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "file:///home/nate/go/src/github.com/CactusDev/Xerophi/alias/createSchema.json",
+    "description": "The creation schema for the alias endpoint",
+    "type": "object",
+    "required": [
+        "arguments",
+        "commandName"
+    ],
+    "properties": {
+        "arguments": {
+            "type": "array",
+            "items": { "$ref": "../base.json#/definitions/messagePacket" }
+        },
+        "commandName": { "type": "string" }
+    }
+}
