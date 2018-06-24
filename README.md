@@ -11,11 +11,14 @@ format `feature/[short but descriptive name]`, bugfixes with the format
 - `develop`
  
   This branch is used for any semi-stable code, that is working, but not
-  necessarily production-ready
+  necessarily production-ready. Avoid committing code directly to `develop`,
+  but it is allowed.
 
 - `master`
 
-  Stable, production-ready code only
+  Stable, production-ready code only. Code may not be committed directly to
+  `master`, it must be created on another branch and a merge/pull request
+  created.
 
 
 
