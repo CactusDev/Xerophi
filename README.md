@@ -1,6 +1,24 @@
 # Xerophi
 The future of the CactusAPI
 
+## Branches
+All features being developed on should be worked on on branches with the naming
+format `feature/[short but descriptive name]`, bugfixes with the format
+`bug/[bug name (- issue # here if applicable)]`, and hot patches with the format
+`hotfix/[short bug description/issue #]`
+
+### Specific branches
+- `develop`
+ 
+  This branch is used for any semi-stable code, that is working, but not
+  necessarily production-ready
+
+- `master`
+
+  Stable, production-ready code only
+
+
+
 ## Breaking Changes
 Since this is a major rewrite of the API there are some changes that have been
 made that are breaking to v1 compatibility. As much was kept the same possible
