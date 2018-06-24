@@ -1,20 +1,24 @@
-package secure
+package secure_test
 
 import (
 	"testing"
 	"time"
 
+	"github.com/CactusDev/Xerophi/redis"
+	"github.com/CactusDev/Xerophi/secure"
+
 	"github.com/gbrlsnchs/jwt"
+	goRedis "github.com/go-redis/redis"
 )
 
 func TestGenToken(t *testing.T) {
-	// TODO: Add more tests for this
-	SetSecret("secret")
+	secure.SetSecret("secret")
+
 	now := time.Now().Format("2006-01-02 15:04:05 -0700 MST")
 	expiration := time.Now().AddDate(0, 0, 7).Format("2006-01-02 15:04:05 -0700 MST")
 	token := "testing"
 	scopes := []string{"commands:add", "quotes:manage", "user:manage"}
-	jwtTok, expr, err := GenToken(scopes, token)
+	jwtTok, expr, err := secure.GenToken(scopes, token)
 	if err != nil {
 		t.Error("Unexpected error in token generation")
 	}
@@ -30,7 +34,7 @@ func TestGenToken(t *testing.T) {
 			expiration, tok.ExpirationTime())
 	}
 	if tok.ExpirationTime().String() != expr {
-		t.Errorf("Invalid expiration date. Expecting %sm got %s",
+		t.Errorf("Invalid expiration date. Expecting %s got %s",
 			expr, tok.ExpirationTime())
 	}
 	if tok.IssuedAt().String() != now {
@@ -77,7 +81,7 @@ func TestReadScope(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		res := ReadScope(test.input)
+		res := secure.ReadScope(test.input)
 		if len(test.expected) != len(res) {
 			t.Errorf("Invalid output from ReadScope. Expected length %d, got length %d",
 				len(test.expected), len(res))
@@ -95,6 +99,95 @@ func TestReadScope(t *testing.T) {
 			if !exists {
 				t.Errorf("Missing required value %s", expected)
 			}
+		}
+	}
+}
+
+func TestValidateToken(t *testing.T) {
+	testCases := []struct {
+		scopes     []string
+		algorithim string
+		expiration time.Time
+		issuedAt   time.Time
+		reqToken   string
+		err        error
+	}{
+		{
+			algorithim: jwt.MethodHS256,
+			expiration: time.Now().AddDate(0, 0, 7),
+			issuedAt:   time.Now(),
+			scopes:     []string{"test:test"},
+			reqToken:   "testToken",
+			err:        nil,
+		},
+		{
+			algorithim: jwt.MethodHS256,
+			expiration: time.Now().AddDate(0, 0, 7),
+			issuedAt:   time.Now(),
+			scopes:     []string{"test:test", "second:test"},
+			reqToken:   "multiScopesToken",
+			err:        nil,
+		},
+	}
+
+	// Instantiate redis server connection since validators use that
+	redis.RedisConn = &redis.Connection{
+		DB: 0,
+		Opts: redis.ConnectionOpts{
+			Host:     "localhost",
+			Port:     6379,
+			User:     "",
+			Password: "",
+		},
+	}
+
+	if err := redis.RedisConn.Connect(); err != nil {
+		// Can't continue without redis running
+		t.Fatal("Redis connection failed - ", err)
+	}
+
+	for _, test := range testCases {
+		// Generate the JWT token
+		jwtToken, err := jwt.Sign(
+			jwt.HS256("secret"),
+			&jwt.Options{
+				ExpirationTime: test.expiration,
+				Timestamp:      true,
+				Public: map[string]interface{}{
+					"token":  test.reqToken,
+					"scopes": test.scopes,
+				},
+			})
+		if err != nil {
+			t.Error(err)
+		}
+
+		// Convert the JWT token string to a JWT object again
+		jwtTokenObj, err := jwt.FromString(jwtToken)
+		if err != nil {
+			t.Error(err)
+		}
+
+		// Add the token to redis
+		err = redis.RedisConn.Session.Set(
+			jwtTokenObj.Public()["token"].(string),
+			jwtToken,
+			-time.Since(jwtTokenObj.ExpirationTime()),
+		).Err()
+		if err != nil && err != goRedis.Nil {
+			t.Error(err)
+		}
+
+		// Use secure.ValidateToken
+		validateErr := secure.ValidateToken(jwtTokenObj, test.reqToken, test.scopes)
+		if validateErr != test.err {
+			t.Error(validateErr)
+		}
+
+		// Current test complete, remove the token added
+		err = redis.RedisConn.Session.Del(jwtTokenObj.Public()["token"].(string)).Err()
+		if err != nil && err != goRedis.Nil {
+			t.Error(err)
 		}
 	}
 }

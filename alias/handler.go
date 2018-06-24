@@ -219,15 +219,3 @@ func (a *Alias) Delete(ctx *gin.Context) {
 	ctx.Header("X-Resource-ID-Removed", rs["id"].(string))
 	ctx.Status(http.StatusOK)
 }
-
-// Stub endpoints
-
-// GetAll is a stub to implement the Handler interface
-func (a *Alias) GetAll(ctx *gin.Context) {
-	ctx.AbortWithStatus(http.StatusTeapot)
-}
-
-// Update is a stub to implement the Handler interface
-func (a *Alias) Update(ctx *gin.Context) {
-	ctx.AbortWithStatus(http.StatusTeapot)
-}

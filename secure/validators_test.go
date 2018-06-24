@@ -3,8 +3,11 @@ package secure
 import (
 	"errors"
 	"testing"
+	"time"
 
+	"github.com/CactusDev/Xerophi/redis"
 	"github.com/gbrlsnchs/jwt"
+	goRedis "github.com/go-redis/redis"
 )
 
 func TestTokenValidator(t *testing.T) {
@@ -75,5 +78,89 @@ func TestScopeValidator(t *testing.T) {
 	if err := validateFunc(jot); err != ErrFailedScopesConversion {
 		t.Errorf("Unexpected error returned. Expected \"%v\", got \"%v\"",
 			ErrFailedScopesConversion, err)
+	}
+}
+
+func TestActiveValidator(t *testing.T) {
+	testCases := []struct {
+		doAdd         bool
+		token         string
+		scopes        []string
+		expectedError error
+	}{
+		{
+			doAdd: true,
+			token: "testToken",
+			scopes: []string{
+				"test:test",
+			},
+			expectedError: nil,
+		},
+	}
+
+	// Instantiate redis server connection since validators use that
+	redis.RedisConn = &redis.Connection{
+		DB: 0,
+		Opts: redis.ConnectionOpts{
+			Host:     "localhost",
+			Port:     6379,
+			User:     "",
+			Password: "",
+		},
+	}
+
+	if err := redis.RedisConn.Connect(); err != nil {
+		// Can't continue without redis running
+		t.Fatal("Redis connection failed - ", err)
+	}
+
+	for _, test := range testCases {
+		// Generate the JWT token
+		jwtToken, err := jwt.Sign(
+			jwt.HS256("secret"),
+			&jwt.Options{
+				ExpirationTime: time.Now(),
+				Timestamp:      true,
+				Public: map[string]interface{}{
+					"token":  test.token,
+					"scopes": test.scopes,
+				},
+			})
+		if err != nil {
+			t.Error(err)
+		}
+
+		// Convert the JWT token string to a JWT object again
+		jwtTokenObj, err := jwt.FromString(jwtToken)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if test.doAdd {
+			// Add the token to redis
+			err = redis.RedisConn.Session.Set(
+				jwtTokenObj.Public()["token"].(string),
+				jwtToken,
+				-time.Since(jwtTokenObj.ExpirationTime()),
+			).Err()
+			if err != nil && err != goRedis.Nil {
+				t.Error(err)
+			}
+		}
+
+		validateFunc := ActiveValidator(test.token)
+		err = validateFunc(jwtTokenObj)
+		if err != nil && err != test.expectedError {
+			t.Error(err)
+		}
+
+		// Only attempt to remove if we added it earlier
+		if test.doAdd {
+			// Current test complete, remove the token added
+			err = redis.RedisConn.Session.Del(jwtTokenObj.Public()["token"].(string)).Err()
+			if err != nil && err != goRedis.Nil {
+				t.Error(err)
+			}
+		}
 	}
 }

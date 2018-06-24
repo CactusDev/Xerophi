@@ -140,11 +140,6 @@ func (c *Repeat) GetSingle(ctx *gin.Context) {
 	return
 }
 
-// Update is required to implement the Handler interface but is never used
-func (c *Repeat) Update(ctx *gin.Context) {
-	ctx.AbortWithStatus(http.StatusTeapot)
-}
-
 // Create creates a new record
 func (c *Repeat) Create(ctx *gin.Context) {
 	token := strings.ToLower(html.EscapeString(ctx.Param("token")))

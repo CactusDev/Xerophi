@@ -201,20 +201,3 @@ func (c *User) GetConfig(ctx *gin.Context) {
 	ctx.AbortWithStatus(http.StatusNotFound)
 	return
 }
-
-// Stubs - non-used functions but required for implementing Handler interface
-
-// Create is a stub required to implement Handler interface, but it's not actually used
-func (c *User) Create(ctx *gin.Context) {
-	ctx.AbortWithStatus(http.StatusTeapot)
-}
-
-// GetAll is a stub required to implement Handler interface, but it's not actually used
-func (c *User) GetAll(ctx *gin.Context) {
-	ctx.AbortWithStatus(http.StatusTeapot)
-}
-
-// Delete is a stub required to implement Handler interface, but it's not actually used
-func (c *User) Delete(ctx *gin.Context) {
-	ctx.AbortWithStatus(http.StatusTeapot)
-}

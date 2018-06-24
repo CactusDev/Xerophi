@@ -27,11 +27,6 @@ type RouteDetails struct {
 
 // Handler is the collection of methods required for a type to be a handler
 type Handler interface {
-	Update(*gin.Context)
-	GetAll(*gin.Context)
-	GetSingle(*gin.Context)
-	Create(*gin.Context)
-	Delete(*gin.Context)
 	Routes() []RouteDetails
 }
 

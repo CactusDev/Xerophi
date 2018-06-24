@@ -2,10 +2,12 @@ package secure
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/CactusDev/Xerophi/redis"
 
 	"github.com/gbrlsnchs/jwt"
+	goRedis "github.com/go-redis/redis"
 )
 
 // Custom validator functions for JWT validation
@@ -88,7 +90,9 @@ func ActiveValidator(token string) jwt.ValidatorFunc {
 	return func(j *jwt.JWT) error {
 		// Check if the token exists in redis
 		redisToken, err := redis.RedisConn.Session.Get(token).Result()
-		if err != nil {
+
+		if err != nil && err != goRedis.Nil {
+			fmt.Println(err)
 			return ErrInternalError
 		}
 

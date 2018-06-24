@@ -33,7 +33,7 @@ func GenToken(scopes []string, token string) (string, string, error) {
 				"scopes": scopes,
 			},
 		})
-	return token, expr.String(), err
+	return token, expr.Format("2006-01-02 15:04:05 -0700 MST"), err
 }
 
 // ReadScope reads in a string of scopes in the format "table:[manage/create],
