@@ -1,7 +1,8 @@
 
 import { RethinkAdapter, RethinkAdapterOptions } from "pims-rethinkdb";
 
-import { Channels } from "./models";
+import { Aliases, Channels, Commands, Configs,
+	     Permits, Points, Quotes, Repeats, Users } from "./models";
 
 export class DatabaseHandler {
 
@@ -9,9 +10,14 @@ export class DatabaseHandler {
 
 	constructor(options: RethinkAdapterOptions) {
 		options.models = [
-			Channels
+			Aliases, Channels, Commands, Configs, Permits, Points,
+			Quotes, Repeats, Users
 		];
 
 		this.instance = new RethinkAdapter(options);
+	}
+
+	public async setup() {
+		await this.instance.ensure();
 	}
 }
