@@ -1,4 +1,6 @@
 
+import "reflect-metadata";
+
 import { Injector } from "dependy";
 import { Core } from "./core";
 
