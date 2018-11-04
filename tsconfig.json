@@ -9,12 +9,9 @@
     "outDir": "dist",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "declaration": true,
-    "strict": true
+    "declaration": true
   },
-  "exclude": [
-    "node_modules",
-    "typings",
-    "dist"
+  "include": [
+    "src"
   ]
 }
