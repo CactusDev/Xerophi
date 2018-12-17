@@ -22,7 +22,7 @@ impl DatabaseHandler {
 		}
 	}
 
-	pub fn connect(&mut self, database: &str, username: &str, password: &str) -> Result<(), mongodb::Error> {
+	pub fn connect(&mut self, database: &str, _username: &str, _password: &str) -> Result<(), mongodb::Error> {
 		match Client::with_uri(&self.url) {
 			Ok(client) => {
 				let database = client.db(database);
@@ -54,7 +54,7 @@ impl DatabaseHandler {
 	pub fn get_command(&self, channel: &str, command: Option<String>) -> Result<Vec<Command>, mongodb::Error> {
 		let filter = match command {
 			Some(cmd) => doc! {
-				"command": cmd,
+				"name": cmd,
 				"channel": channel
 			},
 			None => doc! {
@@ -64,20 +64,23 @@ impl DatabaseHandler {
 
 		match &self.database {
 			Some(db) => {
-				let command_collection = db.collection("command");
-				let mut cursor = command_collection.find(Some(filter), None).unwrap();
+				let command_collection = db.collection("commands");
+				let mut cursor = command_collection.find(Some(filter), None)?;
 
 				let mut all_documents: Vec<Command> = vec! [];
 
-				loop {
-					 match cursor.drain_current_batch() {
-					 	Ok(ref docs) => {
-					 		for doc in docs {
-					 			all_documents.push(from_bson::<Command>(mongodb::Bson::Document(doc.clone())).unwrap());
-					 		}
-					 	}
+				while cursor.has_next().unwrap_or(false) {
+					let doc = cursor.next_n(1);
+					match doc {
+					 	Ok(ref docs) => for doc in docs {
+					 		all_documents.push(from_bson::<Command>(mongodb::Bson::Document(doc.clone())).unwrap());
+					 	},
 					 	Err(_) => break
 					 }
+				}
+				// TODO: no
+				if all_documents.len() == 0 {
+					return Err(mongodb::Error::DefaultError("no command".to_string()))
 				}
 				Ok(all_documents)
 			},
