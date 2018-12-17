@@ -26,13 +26,8 @@ impl DatabaseHandler {
 		match Client::with_uri(&self.url) {
 			Ok(client) => {
 				let database = client.db(database);
-				match database.auth(username, password) {
-					Ok(()) => {
-						self.database = Some(database);
-						Ok(())
-					},
-					Err(e) => Err(e)
-				}
+				self.database = Some(database);
+				Ok(())
 			},
 			Err(err) => Err(err)
 		}
@@ -47,10 +42,7 @@ impl DatabaseHandler {
 				let cursor = channel_collection.find_one(Some(filter), None);
 
 				match cursor {
-					Ok(Some(channel)) => {
-						println!("{}", channel);
-						Ok(from_bson::<Channel>(mongodb::Bson::Document(channel)).unwrap())
-					},
+					Ok(Some(channel)) => Ok(from_bson::<Channel>(mongodb::Bson::Document(channel)).unwrap()),
 					Ok(None) => Err(mongodb::Error::DefaultError("no channel".to_string())),
 					Err(e) => Err(e)
 				}

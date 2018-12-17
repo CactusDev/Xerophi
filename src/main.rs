@@ -21,7 +21,7 @@ use std::sync::Mutex;
 pub type DbConn = Mutex<crate::database::handler::DatabaseHandler>;
 
 fn main() {
-	let mut connection = database::handler::DatabaseHandler::new("192.168.99.100", 32797);
+	let mut connection = database::handler::DatabaseHandler::new("192.168.99.100", 32808);
 	match connection.connect("cactus", "c", "c") {
 		Ok(()) => println!("Connected!"),
 		Err(e) => println!("Error: {}", e)
