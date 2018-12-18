@@ -114,4 +114,23 @@ impl DatabaseHandler {
 			None => Err(HandlerError::InternalError)
 		}
 	}
+
+	pub fn remove_command(&self, channel: &str, command: &str) -> HandlerResult<()> {
+		match self.get_command(channel, Some(command.to_string())) {
+			Ok(_) => {
+				match &self.database {
+					Some(db) => {
+						let command_collection = db.collection("commands");
+						command_collection.delete_one(doc! {
+							"channel": channel,
+							"name": command
+						}, None).map_err(|e| HandlerError::DatabaseError(e))?;
+						Ok(())
+					},
+					None => Err(HandlerError::InternalError)
+				}
+			},
+			Err(_) => Err(HandlerError::Error("command does not exist".to_string()))
+		}
+	}
 }

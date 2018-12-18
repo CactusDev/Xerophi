@@ -70,3 +70,20 @@ pub fn create_command(handler: State<DbConn>, channel: String, command: Json<Pos
 		}
 	}
 }
+
+#[delete("/<channel>/command/<command>")]
+pub fn delete_command(handler: State<DbConn>, channel: String, command: String) -> JsonValue {
+	let result = handler.lock().expect("db lock").remove_command(&channel, &command);
+	match result {
+		Ok(()) => json! ({
+			"meta": json! ({
+				"deleted": true
+			})
+		}),
+		Err(HandlerError::Error(e)) => generate_error(404, Some(e)),
+		Err(e) => {
+			println!("Internal error creating command: {:?}", e);
+			generate_error(500, None)
+		}
+	}
+}
