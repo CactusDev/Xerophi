@@ -10,48 +10,49 @@ use chrono::prelude::*;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Service {
-	authorization: HashMap<String, String>,
-	bot_name: String,
-	channel: String,
-	enabled: bool
+	pub authorization: HashMap<String, String>,
+	pub bot_name: String,
+	pub channel: String,
+	pub enabled: bool
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Channel {
-	created_at: String,
-	deleted_at: Option<String>,
-	updated_at: String,
-	token: String,
-	id: String,
-	enabled: bool,
-	services: HashMap<String, Service>
+	#[serde(rename = "_id")]
+	pub id: bson::oid::ObjectId,
+	pub created_at: String,
+	pub deleted_at: Option<String>,
+	pub updated_at: String,
+	pub token: String,
+	pub enabled: bool,
+	pub services: HashMap<String, Service>
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CommandMeta {
-	added_by: String,
-	cooldown: i32,
-	count: i32,
-	enabled: bool
+	pub added_by: String,
+	pub cooldown: i32,
+	pub count: i32,
+	pub enabled: bool
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Message {
-	data: String,
+	pub data: String,
 	#[serde(rename = "type")]
-	message_type: String
+	pub message_type: String
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Command {
-	channel: String,
-	created_at: String,
-	deleted_at: Option<String>,
-	meta: CommandMeta,
-	name: String,
-	response: Vec<Message>,
-	services: Vec<String>,
-	updated_at: String
+	pub channel: String,
+	pub created_at: String,
+	pub deleted_at: Option<String>,
+	pub meta: CommandMeta,
+	pub name: String,
+	pub response: Vec<Message>,
+	pub services: Vec<String>,
+	pub updated_at: String
 }
 
 impl Command {
@@ -75,4 +76,62 @@ impl Command {
 			updated_at: the_time
 		}
 	}
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct RepeatConfig {
+	pub disabled: bool,
+	pub only_live: bool,
+	pub default_minimum: i32
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct EventConfig {
+	pub message: String,
+	pub enabled: bool
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct EventsConfig {
+	pub follow: EventConfig,
+	pub subscribe: EventConfig,
+	pub host: EventConfig,
+	pub join: EventConfig,
+	pub leave: EventConfig
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum SpamAction {
+	Ignore, Purge, Timeout, Ban
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct SpamConfigs<T> {
+	pub action: SpamAction,
+	pub value: T,
+	pub warnings: i32
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct SpamKeywords {
+	pub blacklist: Vec<String>,
+	pub whitelist: Vec<String>,
+	pub urls: Vec<String>
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct SpamConfig {
+	pub allow_urls: SpamConfigs<bool>,
+	pub max_caps_score: SpamConfigs<i32>,
+	pub max_emoji: SpamConfigs<i32>,
+	pub keywords: SpamKeywords
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Config {
+	pub repeat: RepeatConfig,
+	pub events: EventsConfig,
+	pub spam: SpamConfig,
+	pub channel: String
 }

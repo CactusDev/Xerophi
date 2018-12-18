@@ -24,7 +24,7 @@ pub fn get_channel(handler: State<DbConn>, channel: String) -> JsonValue {
 		Ok(channel) => json!({ "data": channel }),
 		Err(HandlerError::Error(e)) => generate_error(404, Some(e)),
 		Err(e) => {
-			println!("Internal error creating command: {:?}", e);
+			println!("Internal error getting channel: {:?}", e);
 			generate_error(500, None)
 		}
 	}
@@ -37,7 +37,7 @@ pub fn get_commands(handler: State<DbConn>, channel: String) -> JsonValue {
 		Ok(cmds) => json!({ "data": cmds }),
 		Err(HandlerError::Error(e)) => generate_error(404, Some(e)),
 		Err(e) => {
-			println!("Internal error creating command: {:?}", e);
+			println!("Internal error getting command: {:?}", e);
 			generate_error(500, None)
 		}
 	}
@@ -50,7 +50,7 @@ pub fn get_command(handler: State<DbConn>, channel: String, command: String) -> 
 		Ok(cmds) => json!({ "data": cmds[0] }),
 		Err(HandlerError::Error(e)) => generate_error(404, Some(e)),
 		Err(e) => {
-			println!("Internal error creating command: {:?}", e);
+			println!("Internal error getting command: {:?}", e);
 			generate_error(500, None)
 		}
 	}
@@ -82,7 +82,22 @@ pub fn delete_command(handler: State<DbConn>, channel: String, command: String) 
 		}),
 		Err(HandlerError::Error(e)) => generate_error(404, Some(e)),
 		Err(e) => {
-			println!("Internal error creating command: {:?}", e);
+			println!("Internal error deleting command: {:?}", e);
+			generate_error(500, None)
+		}
+	}
+}
+
+#[get("/<channel>/config")]
+pub fn get_config(handler: State<DbConn>, channel: String) -> JsonValue {
+	let result = handler.lock().expect("db lock").get_config(&channel);
+	match result {
+		Ok(config) => json! ({
+			"data": config
+		}),
+		Err(HandlerError::Error(e)) => generate_error(404, Some(e)),
+		Err(e) => {
+			println!("Internal error getting config: {:?}", e);
 			generate_error(500, None)
 		}
 	}

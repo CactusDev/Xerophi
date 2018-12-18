@@ -52,7 +52,12 @@ impl DatabaseHandler {
 				let cursor = channel_collection.find_one(Some(filter), None);
 
 				match cursor {
-					Ok(Some(channel)) => Ok(from_bson::<Channel>(mongodb::Bson::Document(channel)).unwrap()),
+					Ok(Some(channel)) => {
+						let hate = mongodb::Bson::Document(channel);
+						let that = from_bson::<Channel>(hate.clone());
+						println!("{:?}", hate);
+						Ok(that.unwrap())
+					},
 					Ok(None) => Err(HandlerError::Error("no channel".to_string())),
 					Err(e) => Err(HandlerError::DatabaseError(e))
 				}
@@ -131,6 +136,22 @@ impl DatabaseHandler {
 				}
 			},
 			Err(_) => Err(HandlerError::Error("command does not exist".to_string()))
+		}
+	}
+
+	pub fn get_config(&self, channel: &str) -> HandlerResult<Config> {
+		match &self.database {
+			Some(db) => {
+				let config_collection = db.collection("configs");
+				match config_collection.find_one(Some(doc! {
+					"channel": channel
+				}), None) {
+					Ok(Some(config)) => Ok(from_bson::<Config>(mongodb::Bson::Document(config)).unwrap()),
+					Ok(None) => Err(HandlerError::Error("no channel".to_string())),
+					Err(e) => Err(HandlerError::DatabaseError(e))
+				}
+			},
+			None => Err(HandlerError::InternalError)
 		}
 	}
 }
