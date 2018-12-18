@@ -1,6 +1,5 @@
 
 use crate::endpoints::channel::PostCommand;
-use rocket::data::FromData;
 
 use std::{
 	collections::HashMap,
@@ -48,7 +47,6 @@ pub struct Command {
 	channel: String,
 	created_at: String,
 	deleted_at: Option<String>,
-	id: Option<String>,
 	meta: CommandMeta,
 	name: String,
 	response: Vec<Message>,
@@ -65,7 +63,6 @@ impl Command {
 			channel: channel.to_string(),
 			created_at: the_time.clone(),
 			deleted_at: None,
-			id: None,
 			meta: CommandMeta {
 				added_by: "".to_string(),
 				cooldown: 0,

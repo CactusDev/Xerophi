@@ -25,7 +25,7 @@ fn main() {
 	let mut connection = database::handler::DatabaseHandler::new("192.168.99.100", 32769);
 	match connection.connect("cactus", "c", "c") {
 		Ok(()) => println!("Connected!"),
-		Err(e) => println!("Error: {}", e)
+		Err(e) => println!("Error: {:?}", e)
 	};
 
     rocket::ignite()
