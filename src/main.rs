@@ -10,6 +10,7 @@ extern crate rocket_contrib;
 
 extern crate mongodb;
 extern crate bson;
+extern crate chrono;
 
 extern crate serde;
 extern crate serde_json;
@@ -21,7 +22,7 @@ use std::sync::Mutex;
 pub type DbConn = Mutex<crate::database::handler::DatabaseHandler>;
 
 fn main() {
-	let mut connection = database::handler::DatabaseHandler::new("192.168.99.100", 32808);
+	let mut connection = database::handler::DatabaseHandler::new("192.168.99.100", 32769);
 	match connection.connect("cactus", "c", "c") {
 		Ok(()) => println!("Connected!"),
 		Err(e) => println!("Error: {}", e)
@@ -31,7 +32,7 @@ fn main() {
     	.manage(Mutex::new(connection))
 	    .mount("/channel", routes! [
 	    	endpoints::channel::get_channel, endpoints::channel::get_command,
-	    	endpoints::channel::get_commands
+	    	endpoints::channel::get_commands, endpoints::channel::create_command
 	    ])
 	    .launch();
 }

@@ -1,8 +1,18 @@
 
-use rocket_contrib::json::{JsonValue};
+use rocket_contrib::json::{JsonValue, Json};
 
-use rocket::State;
-use crate::{DbConn, endpoints::generate_error};
+use rocket::{State, FromForm};
+use crate::{
+	DbConn, endpoints::generate_error,
+	database::structures::Message
+};
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct PostCommand {
+	pub name: String,
+	pub response: Vec<Message>,
+	pub services: Vec<String>
+}
 
 #[get("/<channel>")]
 pub fn get_channel(handler: State<DbConn>, channel: String) -> JsonValue {
@@ -29,4 +39,10 @@ pub fn get_command(handler: State<DbConn>, channel: String, command: String) -> 
 		Ok(cmds) => json!({ "data": cmds[0] }),
 		Err(_) => generate_error(404)
 	}
+}
+
+#[post("/<channel>/command/create", format = "json", data = "<command>")]
+pub fn create_command(handler: State<DbConn>, channel: String, command: Json<PostCommand>) -> JsonValue {
+	let result = handler.lock().expect("db lock").create_command(&channel, command.into_inner());
+	json! ({})
 }

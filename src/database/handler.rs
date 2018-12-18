@@ -4,9 +4,10 @@ use mongodb::{
 	db::{Database, ThreadedDatabase}
 };
 
-use bson::from_bson;
+use bson::{to_bson, from_bson};
 
 use super::structures::*;
+use crate::endpoints::channel::PostCommand;
 
 pub struct DatabaseHandler {
 	url: String,
@@ -83,6 +84,23 @@ impl DatabaseHandler {
 					return Err(mongodb::Error::DefaultError("no command".to_string()))
 				}
 				Ok(all_documents)
+			},
+			None => Err(mongodb::Error::DefaultError("no database".to_string()))
+		}
+	}
+
+	pub fn create_command(&self, channel: &str, command: PostCommand) -> Result<(), mongodb::Error> {
+		if let Ok(_) = self.get_command(channel, Some(command.name.clone())) {
+			return Err(mongodb::Error::DefaultError("command exists".to_string()));
+		}
+
+		match &self.database {
+			Some(db) => {
+				let command_collection = db.collection("commands");
+				let command = Command::from_post(command, channel);
+
+				command_collection.insert_one(to_bson(&command).unwrap().as_document().unwrap().clone(), None);
+				Ok(())
 			},
 			None => Err(mongodb::Error::DefaultError("no database".to_string()))
 		}

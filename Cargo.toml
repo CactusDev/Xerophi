@@ -11,6 +11,7 @@ serde_json = "1.0.33"
 serde_derive = "1.0.3"
 mongodb = "*"
 bson = "*"
+chrono = "0.4"
 
 [dependencies.rocket_contrib]
 version = "0.4.0"

@@ -1,8 +1,13 @@
 
+use crate::endpoints::channel::PostCommand;
+use rocket::data::FromData;
+
 use std::{
 	collections::HashMap,
 	vec::Vec
 };
+
+use chrono::prelude::*;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Service {
@@ -26,8 +31,8 @@ pub struct Channel {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CommandMeta {
 	added_by: String,
-	cooldown: u32,
-	count: u32,
+	cooldown: i32,
+	count: i32,
 	enabled: bool
 }
 
@@ -43,10 +48,34 @@ pub struct Command {
 	channel: String,
 	created_at: String,
 	deleted_at: Option<String>,
-	id: String,
+	id: Option<String>,
 	meta: CommandMeta,
 	name: String,
 	response: Vec<Message>,
 	services: Vec<String>,
 	updated_at: String
+}
+
+impl Command {
+
+	pub fn from_post(cmd: PostCommand, channel: &str) -> Command {
+		let the_time = Local::now().to_string();
+
+		Command {
+			channel: channel.to_string(),
+			created_at: the_time.clone(),
+			deleted_at: None,
+			id: None,
+			meta: CommandMeta {
+				added_by: "".to_string(),
+				cooldown: 0,
+				count: 0,
+				enabled: true
+			},
+			name: cmd.name,
+			response: cmd.response,
+			services: cmd.services,
+			updated_at: the_time
+		}
+	}
 }
