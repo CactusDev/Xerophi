@@ -154,4 +154,63 @@ impl DatabaseHandler {
 			None => Err(HandlerError::InternalError)
 		}
 	}
+
+	pub fn get_bot_authorization(&self, channel: &str, service: &str) -> HandlerResult<BotAuthorization> {
+		match &self.database {
+			Some(db) => {
+				let authorization_collection = db.collection("authorization");
+				match authorization_collection.find_one(Some(doc! {
+					"channel": channel,
+					"service": service
+				}), None) {
+					Ok(Some(authorization)) => Ok(from_bson::<BotAuthorization>(mongodb::Bson::Document(authorization)).unwrap()),
+					Ok(None) => Err(HandlerError::Error("no channel or service".to_string()),
+					Err(e) => Err(HandlerError::DatabaseError(e))
+				}
+			},
+			None => Err(HandlerError::InternalError)
+		}
+	}
+
+	pub fn update_bot_authorization(&self, channel: &str, service: &str, authorization: &BotAuthorization) -> HandlerResult<()> {
+		match &self.database {
+			Some(db) => {
+				let authorization_collection = db.collection("authorization");
+				match authorization_collection.update_one(Some(doc! {
+					"channel": channel,
+					"service": service
+				}), mongodb::Bson::Document(authorization), None) {
+					Ok(result) => match result.modified_count == 1 {
+						true => Ok(()),
+						_ => Err(HandlerError::Error("could not find service for bot".to_string()))
+					},
+					Err(e) => Err(HandlerError::DatabaseError(e))
+				}
+			},
+			None => Err(HandlerError::InternalError)
+		}
+	}
+
+	pub fn delete_bot_authorization(&self, channel: &str, service: &str) -> HandlerResult<()> {
+		match &self.database {
+			Some(db) => {
+				let authorization_collection = db.collection("authorization");
+				match authorization_collection.delete_one(Some(doc! {
+					"channel": channel,
+					"service": service
+				}), None) {
+					Ok(result) => match result.deleted_count == 1 {
+						true => Ok(()),
+						_ => HandlerError::Error("service did not have authorization for channel.".to_string())
+					},
+					Err(e) => Err(HandlerError::DatabaseError(e))
+				}
+			},
+			None => Err(HandlerError::InternalError)
+		}
+	}
+
+	pub fn get_bot_state(&self, channel: &str) -> HandlerResult<BotState> {
+
+	}
 }

@@ -9,14 +9,6 @@ use std::{
 use chrono::prelude::*;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Service {
-	pub authorization: HashMap<String, String>,
-	pub bot_name: String,
-	pub channel: String,
-	pub enabled: bool
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Channel {
 	#[serde(rename = "_id")]
 	pub id: bson::oid::ObjectId,
@@ -25,7 +17,6 @@ pub struct Channel {
 	pub updated_at: String,
 	pub token: String,
 	pub enabled: bool,
-	pub services: HashMap<String, Service>
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -134,4 +125,25 @@ pub struct Config {
 	pub events: EventsConfig,
 	pub spam: SpamConfig,
 	pub channel: String
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct BotAuthorization {
+	access: String,
+	refresh: Option<String>,
+	expiration: Option<String>,
+	last_auth: Option<String>
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ConnectedService {
+	service: String,
+	connected: bool,
+	last_authorization: i32
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct BotState {
+	services: Vec<ConnectedService>,
+	token: String
 }

@@ -102,3 +102,28 @@ pub fn get_config(handler: State<DbConn>, channel: String) -> JsonValue {
 		}
 	}
 }
+
+#[get("/<channel>/bot/<service>/authorization")]
+pub fn get_bot_authorization(handler: State<DbConn>, channel: String, service: String) -> JsonValue {
+	
+}
+
+#[patch("/<channel>/bot/<service>/authorization")]
+pub fn update_bot_authorization(handler: State<DbConn>, channel: String, service: String) -> JsonValue {
+
+}
+
+#[delete("/<channel>/bot/<service>/authorization")]
+pub fn delete_bot_authorization(handler: State<DbConn>, channel: String, service: String) -> JsonValue {
+
+}
+
+#[get("/<channel>/bot/state")]
+pub fn get_bot_state(handler: State<DbConn>, channel: String) -> JsonValue {
+
+}
+
+#[patch("/<channel>/bot/state")]
+pub fn update_bot_state(handler: State<DbConn>, channel: String) -> JsonValue {
+
+}
