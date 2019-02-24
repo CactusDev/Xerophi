@@ -1,6 +1,7 @@
 
 pub mod channel;
 pub mod state;
+pub mod authorization;
 
 use rocket_contrib::json::JsonValue;
 

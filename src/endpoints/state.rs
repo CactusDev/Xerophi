@@ -1,13 +1,10 @@
 
-use rocket_contrib::json::{JsonValue, Json};
+use rocket_contrib::json::JsonValue;
 
 use rocket::State;
 use crate::{
 	DbConn, endpoints::generate_error,
-	database::{
-		structures::Message,
-		handler::HandlerError
-	}
+	database::handler::HandlerError
 };
 
 #[get("/<channel>/state")]

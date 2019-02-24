@@ -154,8 +154,7 @@ pub struct Config {
 pub struct BotAuthorization {
 	pub access: String,
 	pub refresh: Option<String>,
-	pub expiration: Option<String>,
-	pub last_auth: Option<String>
+	pub expiration: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

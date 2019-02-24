@@ -1,7 +1,8 @@
 
 use mongodb::{
 	Client, ThreadedClient, doc, bson,
-	db::{Database, ThreadedDatabase}
+	db::{Database, ThreadedDatabase},
+	coll::options::{UpdateOptions}
 };
 
 use bson::{to_bson, from_bson};
@@ -9,7 +10,10 @@ use bson::{to_bson, from_bson};
 use argon2::{Config as ArgonConfig, hash_encoded};
 
 use super::structures::*;
-use crate::endpoints::channel::{PostCommand, PostChannel};
+use crate::endpoints::{
+	channel::{PostCommand, PostChannel},
+	authorization::{PostServiceAuth}
+};
 
 #[derive(Debug)]
 pub enum HandlerError {
@@ -196,10 +200,54 @@ impl<'cfg> DatabaseHandler<'cfg> {
 
 		match &self.database {
 			Some(db) => {
-				let authorization_collection = db.collection("authorization");
-				match authorization_collection.find_one(Some(filter), None) {
+				let state_collection = db.collection("state");
+				match state_collection.find_one(Some(filter), None) {
 					Ok(Some(state)) => Ok(from_bson::<BotState>(mongodb::Bson::Document(state)).unwrap()),
 					Ok(None) => Err(HandlerError::Error("no state for provided channel".to_string())),
+					Err(e) => Err(HandlerError::DatabaseError(e))
+				}
+			},
+			None => Err(HandlerError::InternalError)
+		}
+	}
+
+	pub fn get_service_auth(&self, channel: &str, service: &str) -> HandlerResult<BotAuthorization> {
+		let filter = doc! {
+			"service": service,
+			"channel": channel
+		};
+
+		match &self.database {
+			Some(db) => {
+				let authorization_collection = db.collection("authorization");
+				match authorization_collection.find_one(Some(filter), None) {
+					Ok(Some(auth)) => Ok(from_bson::<BotAuthorization>(mongodb::Bson::Document(auth)).unwrap()),
+					Ok(None) => Err(HandlerError::Error("no auth for service".to_string())),
+					Err(e) => Err(HandlerError::DatabaseError(e))
+				}
+			},
+			None => Err(HandlerError::InternalError)
+		}
+	}
+
+	pub fn update_service_auth(&self, channel: &str, service: &str, auth: PostServiceAuth) -> HandlerResult<()> {
+		let filter = doc! {
+			"service": service,
+			"channel": channel
+		};
+
+		let mut opts = UpdateOptions::new();
+		opts.upsert = Some(true);
+
+		match &self.database {
+			Some(db) => {
+				let authorization_collection = db.collection("authorization");
+				match authorization_collection.update_one(filter, doc! {
+					"refresh": &auth.refresh.unwrap_or("".into()),
+					"expires": &auth.expiration.unwrap_or("".into()),
+					"access": &auth.access
+				}, Some(opts)) {
+					Ok(_) => Ok(()),
 					Err(e) => Err(HandlerError::DatabaseError(e))
 				}
 			},

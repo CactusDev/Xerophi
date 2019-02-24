@@ -39,5 +39,8 @@ fn main() {
 	    .mount("/state", routes! [
 	    	endpoints::state::get_channel_state, endpoints::state::get_channel_service_state
 	    ])
+	    .mount("/auth", routes! [
+	    	endpoints::authorization::get_service_auth, endpoints::authorization::update_service_auth
+	    ])
 	    .launch();
 }
