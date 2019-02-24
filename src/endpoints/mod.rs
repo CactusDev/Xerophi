@@ -1,5 +1,6 @@
 
 pub mod channel;
+pub mod state;
 
 use rocket_contrib::json::JsonValue;
 

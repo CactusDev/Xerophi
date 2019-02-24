@@ -33,10 +33,11 @@ fn main() {
     	.manage(Mutex::new(connection))
 	    .mount("/channel", routes! [
 	    	endpoints::channel::get_channel, endpoints::channel::create_channel,
-	    	endpoints::channel::get_command,
-	    	endpoints::channel::get_commands, endpoints::channel::create_command,
-	    	endpoints::channel::delete_command, endpoints::channel::get_channel_state,
-	    	endpoints::channel::get_channel_service_state
+	    	endpoints::channel::get_command, endpoints::channel::delete_command,
+	    	endpoints::channel::get_commands, endpoints::channel::create_command
+	    ])
+	    .mount("/state", routes! [
+	    	endpoints::state::get_channel_state, endpoints::state::get_channel_service_state
 	    ])
 	    .launch();
 }
