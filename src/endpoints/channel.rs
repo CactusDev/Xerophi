@@ -17,6 +17,12 @@ pub struct PostCommand {
 	pub services: Vec<String>
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct PostChannel {
+	pub name: String,
+	pub password: String
+}
+
 #[get("/<channel>")]
 pub fn get_channel(handler: State<DbConn>, channel: String) -> JsonValue {
 	let channel = handler.lock().expect("db lock").get_channel(&channel);
@@ -25,6 +31,22 @@ pub fn get_channel(handler: State<DbConn>, channel: String) -> JsonValue {
 		Err(HandlerError::Error(e)) => generate_error(404, Some(e)),
 		Err(e) => {
 			println!("Internal error getting channel: {:?}", e);
+			generate_error(500, None)
+		}
+	}
+}
+
+#[post("/create", format = "json", data = "<channel>")]
+pub fn create_channel(handler: State<DbConn>, channel: Json<PostChannel>) -> JsonValue {
+	let result = handler.lock().expect("db lock").create_channel(channel.into_inner());
+	match result {
+		Ok(channel) => json!({
+			"created": true,
+			"token": channel.token
+		}),
+		Err(HandlerError::Error(e)) => generate_error(404, Some(e)),
+		Err(e) => {
+			println!("Internal error creating channel: {:?}", e);
 			generate_error(500, None)
 		}
 	}
@@ -88,42 +110,40 @@ pub fn delete_command(handler: State<DbConn>, channel: String, command: String) 
 	}
 }
 
-#[get("/<channel>/config")]
-pub fn get_config(handler: State<DbConn>, channel: String) -> JsonValue {
-	let result = handler.lock().expect("db lock").get_config(&channel);
+#[get("/<channel>/state")]
+pub fn get_channel_state(handler: State<DbConn>, channel: String) -> JsonValue {
+	let result = handler.lock().expect("db lock").get_channel_state(&channel, None);
 	match result {
-		Ok(config) => json! ({
-			"data": config
+		Ok(state) => json! ({
+			// TODO: Add more information
+			"services": state.services,
+			"meta": json!({
+				"channel": state.token
+			})
 		}),
 		Err(HandlerError::Error(e)) => generate_error(404, Some(e)),
 		Err(e) => {
-			println!("Internal error getting config: {:?}", e);
+			println!("Internal error getting state: {:?}", e);
 			generate_error(500, None)
 		}
 	}
 }
 
-#[get("/<channel>/bot/<service>/authorization")]
-pub fn get_bot_authorization(handler: State<DbConn>, channel: String, service: String) -> JsonValue {
-	
-}
-
-#[patch("/<channel>/bot/<service>/authorization")]
-pub fn update_bot_authorization(handler: State<DbConn>, channel: String, service: String) -> JsonValue {
-
-}
-
-#[delete("/<channel>/bot/<service>/authorization")]
-pub fn delete_bot_authorization(handler: State<DbConn>, channel: String, service: String) -> JsonValue {
-
-}
-
-#[get("/<channel>/bot/state")]
-pub fn get_bot_state(handler: State<DbConn>, channel: String) -> JsonValue {
-
-}
-
-#[patch("/<channel>/bot/state")]
-pub fn update_bot_state(handler: State<DbConn>, channel: String) -> JsonValue {
-
+#[get("/<channel>/state/<service>")]
+pub fn get_channel_service_state(handler: State<DbConn>, channel: String, service: String) -> JsonValue {
+	let result = handler.lock().expect("db lock").get_channel_state(&channel, Some(service));
+	match result {
+		Ok(state) => json! ({
+			// TODO: Add more information
+			"service": state.services[0],
+			"meta": json!({
+				"channel": state.token
+			})
+		}),
+		Err(HandlerError::Error(e)) => generate_error(404, Some(e)),
+		Err(e) => {
+			println!("Internal error getting state: {:?}", e);
+			generate_error(500, None)
+		}
+	}
 }

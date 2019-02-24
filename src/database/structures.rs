@@ -1,8 +1,7 @@
 
-use crate::endpoints::channel::PostCommand;
+use crate::endpoints::channel::{PostCommand, PostChannel};
 
 use std::{
-	collections::HashMap,
 	vec::Vec
 };
 
@@ -17,6 +16,30 @@ pub struct Channel {
 	pub updated_at: String,
 	pub token: String,
 	pub enabled: bool,
+	pub password: String
+}
+
+impl Channel {
+
+	pub fn from_post(channel: PostChannel, password: String) -> Option<Self> {
+		let the_time = Local::now().to_string();
+		let id = bson::oid::ObjectId::new();
+
+		match id {
+			Ok(id) => {
+				Some(Channel {
+					id,
+					created_at: the_time.clone(),
+					deleted_at: None,
+					updated_at: the_time,
+					token: channel.name,
+					enabled: true,
+					password
+   			    })
+			},
+			Err(_) => None
+		}
+	}
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -129,21 +152,21 @@ pub struct Config {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BotAuthorization {
-	access: String,
-	refresh: Option<String>,
-	expiration: Option<String>,
-	last_auth: Option<String>
+	pub access: String,
+	pub refresh: Option<String>,
+	pub expiration: Option<String>,
+	pub last_auth: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ConnectedService {
-	service: String,
-	connected: bool,
-	last_authorization: i32
+	pub service: String,
+	pub connected: bool,
+	pub last_authorization: i32
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BotState {
-	services: Vec<ConnectedService>,
-	token: String
+	pub services: Vec<ConnectedService>,
+	pub token: String
 }

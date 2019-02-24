@@ -6,8 +6,10 @@ use mongodb::{
 
 use bson::{to_bson, from_bson};
 
+use argon2::{Config as ArgonConfig, hash_encoded};
+
 use super::structures::*;
-use crate::endpoints::channel::PostCommand;
+use crate::endpoints::channel::{PostCommand, PostChannel};
 
 #[derive(Debug)]
 pub enum HandlerError {
@@ -18,17 +20,24 @@ pub enum HandlerError {
 
 type HandlerResult<T> = Result<T, HandlerError>;
 
-pub struct DatabaseHandler {
+pub struct DatabaseHandler<'cfg> {
 	url: String,
-	database: Option<Database>
+	database: Option<Database>,
+	argon: ArgonConfig<'cfg>,
+	salt: String
 }
 
-impl DatabaseHandler {
+impl<'cfg> DatabaseHandler<'cfg> {
 
-	pub fn new(host: &str, port: u16) -> Self {
+	pub fn new(host: &str, port: u16, key: &'cfg str, salt: &str) -> Self {
+		let mut argon = ArgonConfig::default();
+		argon.secret = key.as_bytes();
+
 		DatabaseHandler {
 			url: format!("mongodb://{}:{}", host, port),
-			database: None
+			database: None,
+			argon,
+			salt: salt.to_string()
 		}
 	}
 
@@ -52,14 +61,35 @@ impl DatabaseHandler {
 				let cursor = channel_collection.find_one(Some(filter), None);
 
 				match cursor {
-					Ok(Some(channel)) => {
-						let hate = mongodb::Bson::Document(channel);
-						let that = from_bson::<Channel>(hate.clone());
-						println!("{:?}", hate);
-						Ok(that.unwrap())
-					},
+					Ok(Some(channel)) => Ok(from_bson::<Channel>(mongodb::Bson::Document(channel)).unwrap()),
 					Ok(None) => Err(HandlerError::Error("no channel".to_string())),
 					Err(e) => Err(HandlerError::DatabaseError(e))
+				}
+			},
+			None => Err(HandlerError::InternalError)
+		}
+	}
+
+	pub fn create_channel(&self, channel: PostChannel) -> HandlerResult<Channel> {
+		if let Ok(_) = self.get_channel(&channel.name) {
+			return Err(HandlerError::Error("channel with name exists".to_string()));
+		}
+
+		let password = hash_encoded(&channel.password.clone().into_bytes(), &self.salt.clone().into_bytes(), &self.argon);
+		if let Err(e) = password {
+			println!("{:?}", e);
+			return Err(HandlerError::Error("could not hash password".to_string()));
+		}
+
+		match &self.database {
+			Some(db) => {
+				let channel_collection = db.collection("channels");
+				match Channel::from_post(channel, password.unwrap()) {
+					Some(channel) => {
+						channel_collection.insert_one(to_bson(&channel).unwrap().as_document().unwrap().clone(), None).map_err(|e| HandlerError::DatabaseError(e))?;
+						Ok(channel)
+					},
+					None => Err(HandlerError::InternalError)
 				}
 			},
 			None => Err(HandlerError::InternalError)
@@ -155,62 +185,25 @@ impl DatabaseHandler {
 		}
 	}
 
-	pub fn get_bot_authorization(&self, channel: &str, service: &str) -> HandlerResult<BotAuthorization> {
+	pub fn get_channel_state(&self, channel: &str, service: Option<String>) -> HandlerResult<BotState> {
+		let filter = match service {
+			Some(service) => doc! {
+				"service": service,
+				"channel": channel
+			},
+			None => doc! { "channel": channel }
+		};
+
 		match &self.database {
 			Some(db) => {
 				let authorization_collection = db.collection("authorization");
-				match authorization_collection.find_one(Some(doc! {
-					"channel": channel,
-					"service": service
-				}), None) {
-					Ok(Some(authorization)) => Ok(from_bson::<BotAuthorization>(mongodb::Bson::Document(authorization)).unwrap()),
-					Ok(None) => Err(HandlerError::Error("no channel or service".to_string()),
+				match authorization_collection.find_one(Some(filter), None) {
+					Ok(Some(state)) => Ok(from_bson::<BotState>(mongodb::Bson::Document(state)).unwrap()),
+					Ok(None) => Err(HandlerError::Error("no state for provided channel".to_string())),
 					Err(e) => Err(HandlerError::DatabaseError(e))
 				}
 			},
 			None => Err(HandlerError::InternalError)
 		}
-	}
-
-	pub fn update_bot_authorization(&self, channel: &str, service: &str, authorization: &BotAuthorization) -> HandlerResult<()> {
-		match &self.database {
-			Some(db) => {
-				let authorization_collection = db.collection("authorization");
-				match authorization_collection.update_one(Some(doc! {
-					"channel": channel,
-					"service": service
-				}), mongodb::Bson::Document(authorization), None) {
-					Ok(result) => match result.modified_count == 1 {
-						true => Ok(()),
-						_ => Err(HandlerError::Error("could not find service for bot".to_string()))
-					},
-					Err(e) => Err(HandlerError::DatabaseError(e))
-				}
-			},
-			None => Err(HandlerError::InternalError)
-		}
-	}
-
-	pub fn delete_bot_authorization(&self, channel: &str, service: &str) -> HandlerResult<()> {
-		match &self.database {
-			Some(db) => {
-				let authorization_collection = db.collection("authorization");
-				match authorization_collection.delete_one(Some(doc! {
-					"channel": channel,
-					"service": service
-				}), None) {
-					Ok(result) => match result.deleted_count == 1 {
-						true => Ok(()),
-						_ => HandlerError::Error("service did not have authorization for channel.".to_string())
-					},
-					Err(e) => Err(HandlerError::DatabaseError(e))
-				}
-			},
-			None => Err(HandlerError::InternalError)
-		}
-	}
-
-	pub fn get_bot_state(&self, channel: &str) -> HandlerResult<BotState> {
-
 	}
 }
