@@ -2,8 +2,7 @@
 use rocket_contrib::json::Json;
 
 use rocket::{
-	State,
-	Response,
+	State, Response,
 	http::Status
 };
 

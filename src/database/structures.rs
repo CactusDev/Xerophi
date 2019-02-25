@@ -71,7 +71,7 @@ pub struct Command {
 
 impl Command {
 
-	pub fn from_post(cmd: PostCommand, channel: &str) -> Command {
+	pub fn from_post(cmd: PostCommand, channel: &str, name: &str) -> Command {
 		let the_time = Local::now().to_string();
 
 		Command {
@@ -84,7 +84,7 @@ impl Command {
 				count: 0,
 				enabled: true
 			},
-			name: cmd.name,
+			name: name.to_string(),
 			response: cmd.response,
 			services: cmd.services,
 			updated_at: the_time

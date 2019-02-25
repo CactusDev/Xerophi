@@ -124,14 +124,14 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		Ok(all_documents)
 	}
 
-	pub fn create_command(&self, channel: &str, command: PostCommand) -> HandlerResult<Command> {
-		if let Ok(_) = self.get_command(channel, Some(command.name.clone())) {
+	pub fn create_command(&self, channel: &str, name: &str, command: PostCommand) -> HandlerResult<Command> {
+		if let Ok(_) = self.get_command(channel, Some(name.to_string())) {
 			return Err(HandlerError::Error("command exists".to_string()));
 		}
 
         let db = self.database.as_ref().expect("no database");
 		let command_collection = db.collection("commands");
-		let command = Command::from_post(command, channel);
+		let command = Command::from_post(command, channel, name);
 
 		command_collection.insert_one(to_bson(&command).unwrap().as_document().unwrap().clone(), None).map_err(|e| HandlerError::DatabaseError(e))?;
 		Ok(command)
