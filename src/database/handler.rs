@@ -58,20 +58,16 @@ impl<'cfg> DatabaseHandler<'cfg> {
 	}
 
 	pub fn get_channel(&self, name: &str) -> HandlerResult<Channel> {
-		match &self.database {
-			Some(db) => {
-				let filter = doc! { "token": name };
+        let db = self.database.as_ref().expect("no database");
+		let filter = doc! { "token": name };
 
-				let channel_collection = db.collection("channels");
-				let cursor = channel_collection.find_one(Some(filter), None);
+		let channel_collection = db.collection("channels");
+		let cursor = channel_collection.find_one(Some(filter), None);
 
-				match cursor {
-					Ok(Some(channel)) => Ok(from_bson::<Channel>(mongodb::Bson::Document(channel)).unwrap()),
-					Ok(None) => Err(HandlerError::Error("no channel".to_string())),
-					Err(e) => Err(HandlerError::DatabaseError(e))
-				}
-			},
-			None => Err(HandlerError::InternalError)
+		match cursor {
+			Ok(Some(channel)) => Ok(from_bson::<Channel>(mongodb::Bson::Document(channel)).unwrap()),
+			Ok(None) => Err(HandlerError::Error("no channel".to_string())),
+			Err(e) => Err(HandlerError::DatabaseError(e))
 		}
 	}
 
@@ -81,22 +77,17 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		}
 
 		let password = hash_encoded(&channel.password.clone().into_bytes(), &self.salt.clone().into_bytes(), &self.argon);
-		if let Err(e) = password {
-			println!("{:?}", e);
+		if let Err(_) = password {
 			return Err(HandlerError::Error("could not hash password".to_string()));
 		}
 
-		match &self.database {
-			Some(db) => {
-				let channel_collection = db.collection("channels");
-				match Channel::from_post(channel, password.unwrap()) {
-					Some(channel) => {
-						channel_collection.insert_one(to_bson(&channel).unwrap().as_document().unwrap().clone(), None)
-							.map_err(|e| HandlerError::DatabaseError(e))?;
-						Ok(channel)
-					},
-					None => Err(HandlerError::InternalError)
-				}
+        let db = self.database.as_ref().expect("no database");
+		let channel_collection = db.collection("channels");
+		match Channel::from_post(channel, password.unwrap()) {
+			Some(channel) => {
+				channel_collection.insert_one(to_bson(&channel).unwrap().as_document().unwrap().clone(), None)
+					.map_err(|e| HandlerError::DatabaseError(e))?;
+				Ok(channel)
 			},
 			None => Err(HandlerError::InternalError)
 		}
@@ -111,30 +102,26 @@ impl<'cfg> DatabaseHandler<'cfg> {
 			None => doc! { "channel": channel }
 		};
 
-		match &self.database {
-			Some(db) => {
-				let command_collection = db.collection("commands");
-				let mut cursor = command_collection.find(Some(filter), None).map_err(|e| HandlerError::DatabaseError(e))?;
+        let db = self.database.as_ref().expect("no database");
+		let command_collection = db.collection("commands");
+		let mut cursor = command_collection.find(Some(filter), None).map_err(|e| HandlerError::DatabaseError(e))?;
 
-				let mut all_documents: Vec<Command> = vec! [];
+		let mut all_documents: Vec<Command> = vec! [];
 
-				while cursor.has_next().unwrap_or(false) {
-					let doc = cursor.next_n(1);
-					match doc {
-					 	Ok(ref docs) => for doc in docs {
-					 		all_documents.push(from_bson::<Command>(mongodb::Bson::Document(doc.clone())).unwrap());
-					 	},
-					 	Err(_) => break
-					 }
-				}
-				// TODO: no
-				if all_documents.len() == 0 {
-					return Err(HandlerError::Error("no command".to_string()))
-				}
-				Ok(all_documents)
-			},
-			None => Err(HandlerError::InternalError)
+		while cursor.has_next().unwrap_or(false) {
+			let doc = cursor.next_n(1);
+			match doc {
+			 	Ok(ref docs) => for doc in docs {
+			 		all_documents.push(from_bson::<Command>(mongodb::Bson::Document(doc.clone())).unwrap());
+			 	},
+			 	Err(_) => break
+			 }
 		}
+		// TODO: no
+		if all_documents.len() == 0 {
+			return Err(HandlerError::Error("no command".to_string()))
+		}
+		Ok(all_documents)
 	}
 
 	pub fn create_command(&self, channel: &str, command: PostCommand) -> HandlerResult<Command> {
@@ -142,50 +129,37 @@ impl<'cfg> DatabaseHandler<'cfg> {
 			return Err(HandlerError::Error("command exists".to_string()));
 		}
 
-		match &self.database {
-			Some(db) => {
-				let command_collection = db.collection("commands");
-				let command = Command::from_post(command, channel);
+        let db = self.database.as_ref().expect("no database");
+		let command_collection = db.collection("commands");
+		let command = Command::from_post(command, channel);
 
-				command_collection.insert_one(to_bson(&command).unwrap().as_document().unwrap().clone(), None).map_err(|e| HandlerError::DatabaseError(e))?;
-				Ok(command)
-			},
-			None => Err(HandlerError::InternalError)
-		}
+		command_collection.insert_one(to_bson(&command).unwrap().as_document().unwrap().clone(), None).map_err(|e| HandlerError::DatabaseError(e))?;
+		Ok(command)
 	}
 
 	pub fn remove_command(&self, channel: &str, command: &str) -> HandlerResult<()> {
-		match self.get_command(channel, Some(command.to_string())) {
-			Ok(_) => {
-				match &self.database {
-					Some(db) => {
-						let command_collection = db.collection("commands");
-						command_collection.delete_one(doc! {
-							"channel": channel,
-							"name": command
-						}, None).map_err(|e| HandlerError::DatabaseError(e))?;
-						Ok(())
-					},
-					None => Err(HandlerError::InternalError)
-				}
-			},
-			Err(_) => Err(HandlerError::Error("command does not exist".to_string()))
+		if let Err(_) = self.get_command(channel, Some(command.to_string())) {
+			return Err(HandlerError::Error("command does not exist".to_string()));
 		}
+
+        let db = self.database.as_ref().expect("no database");
+		let command_collection = db.collection("commands");
+		command_collection.delete_one(doc! {
+			"channel": channel,
+			"name": command
+		}, None).map_err(|e| HandlerError::DatabaseError(e))?;
+		Ok(())
 	}
 
 	pub fn get_config(&self, channel: &str) -> HandlerResult<Config> {
-		match &self.database {
-			Some(db) => {
-				let config_collection = db.collection("configs");
-				match config_collection.find_one(Some(doc! {
-					"channel": channel
-				}), None) {
-					Ok(Some(config)) => Ok(from_bson::<Config>(mongodb::Bson::Document(config)).unwrap()),
-					Ok(None) => Err(HandlerError::Error("no channel".to_string())),
-					Err(e) => Err(HandlerError::DatabaseError(e))
-				}
-			},
-			None => Err(HandlerError::InternalError)
+        let db = self.database.as_ref().expect("no database");
+		let config_collection = db.collection("configs");
+		match config_collection.find_one(Some(doc! {
+			"channel": channel
+		}), None) {
+			Ok(Some(config)) => Ok(from_bson::<Config>(mongodb::Bson::Document(config)).unwrap()),
+			Ok(None) => Err(HandlerError::Error("no channel".to_string())),
+			Err(e) => Err(HandlerError::DatabaseError(e))
 		}
 	}
 
@@ -198,16 +172,12 @@ impl<'cfg> DatabaseHandler<'cfg> {
 			None => doc! { "channel": channel }
 		};
 
-		match &self.database {
-			Some(db) => {
-				let state_collection = db.collection("state");
-				match state_collection.find_one(Some(filter), None) {
-					Ok(Some(state)) => Ok(from_bson::<BotState>(mongodb::Bson::Document(state)).unwrap()),
-					Ok(None) => Err(HandlerError::Error("no state for provided channel".to_string())),
-					Err(e) => Err(HandlerError::DatabaseError(e))
-				}
-			},
-			None => Err(HandlerError::InternalError)
+        let db = self.database.as_ref().expect("no database");
+		let state_collection = db.collection("state");
+		match state_collection.find_one(Some(filter), None) {
+			Ok(Some(state)) => Ok(from_bson::<BotState>(mongodb::Bson::Document(state)).unwrap()),
+			Ok(None) => Err(HandlerError::Error("no state for provided channel".to_string())),
+			Err(e) => Err(HandlerError::DatabaseError(e))
 		}
 	}
 
@@ -217,16 +187,12 @@ impl<'cfg> DatabaseHandler<'cfg> {
 			"channel": channel
 		};
 
-		match &self.database {
-			Some(db) => {
-				let authorization_collection = db.collection("authorization");
-				match authorization_collection.find_one(Some(filter), None) {
-					Ok(Some(auth)) => Ok(from_bson::<BotAuthorization>(mongodb::Bson::Document(auth)).unwrap()),
-					Ok(None) => Err(HandlerError::Error("no auth for service".to_string())),
-					Err(e) => Err(HandlerError::DatabaseError(e))
-				}
-			},
-			None => Err(HandlerError::InternalError)
+        let db = self.database.as_ref().expect("no database");
+		let authorization_collection = db.collection("authorization");
+		match authorization_collection.find_one(Some(filter), None) {
+			Ok(Some(auth)) => Ok(from_bson::<BotAuthorization>(mongodb::Bson::Document(auth)).unwrap()),
+			Ok(None) => Err(HandlerError::Error("no auth for service".to_string())),
+			Err(e) => Err(HandlerError::DatabaseError(e))
 		}
 	}
 
@@ -239,19 +205,15 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		let mut opts = UpdateOptions::new();
 		opts.upsert = Some(true);
 
-		match &self.database {
-			Some(db) => {
-				let authorization_collection = db.collection("authorization");
-				match authorization_collection.update_one(filter, doc! {
-					"refresh": &auth.refresh.unwrap_or("".into()),
-					"expires": &auth.expiration.unwrap_or("".into()),
-					"access": &auth.access
-				}, Some(opts)) {
-					Ok(_) => Ok(()),
-					Err(e) => Err(HandlerError::DatabaseError(e))
-				}
-			},
-			None => Err(HandlerError::InternalError)
+        let db = self.database.as_ref().expect("no database");
+		let authorization_collection = db.collection("authorization");
+		match authorization_collection.update_one(filter, doc! {
+			"refresh": &auth.refresh.unwrap_or("".into()),
+			"expires": &auth.expiration.unwrap_or("".into()),
+			"access": &auth.access
+		}, Some(opts)) {
+			Ok(_) => Ok(()),
+			Err(e) => Err(HandlerError::DatabaseError(e))
 		}
 	}
 
