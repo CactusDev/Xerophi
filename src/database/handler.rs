@@ -330,4 +330,15 @@ impl<'cfg> DatabaseHandler<'cfg> {
 			.map_err(|e| HandlerError::DatabaseError(e))?;
 		Ok(count)
 	}
+
+	pub fn delete_quote(&self, channel: &str, quote: u32) -> HandlerResult<()> {
+		let db = self.database.as_ref().expect("no database");
+		let quote_collection = db.collection("quotes");
+
+		quote_collection.delete_one(doc! {
+			"channel": channel,
+			"quote_id": quote
+		}, None).map_err(|e| HandlerError::DatabaseError(e))?;
+		Ok(())
+	}
 }

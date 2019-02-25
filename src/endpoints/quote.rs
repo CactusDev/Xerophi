@@ -71,3 +71,16 @@ pub fn get_random_quote(handler: State<DbConn>, channel: String) -> JsonValue {
 		}
 	}
 }
+
+#[delete("/<channel>/<id>", rank = 4)]
+pub fn delete_quote(handler: State<DbConn>, channel: String, id: u32) -> JsonValue {
+	let result = handler.lock().expect("db lock").delete_quote(&channel, id);
+	match result {
+		Ok(()) => json!({ "data": json!({ "deleted": true }) }),
+		Err(HandlerError::Error(_)) => json!({ "data": json!({}) }),
+		Err(e) => {
+			println!("Internal error getting quote: {:?}", e);
+			generate_error(500, None)
+		}
+	}
+}
