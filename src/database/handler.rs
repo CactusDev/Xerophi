@@ -286,12 +286,10 @@ impl<'cfg> DatabaseHandler<'cfg> {
 	}
 
 	pub fn get_random_quote(&self, channel: &str) -> HandlerResult<Quote> {
-		let pipeline = vec![doc! {
-			"$sample": doc! {
-				"size": 1
-			}
-		},
-		doc! { "channel": channel }];
+		let pipeline = vec![
+		    doc! { "$match": doc! { "channel": channel } },
+		    doc! { "$sample": doc! { "size": 1 } }
+		];
 
         let db = self.database.as_ref().expect("no database");
 		let quote_collection = db.collection("quotes");
@@ -322,7 +320,7 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		let quote = Quote {
 			quote_id: count,
 			response: quote.response,
-			channel: quote.channel
+			channel: channel.to_string()
 		};
 		quote_collection.insert_one(to_bson(&quote).unwrap().as_document().unwrap().clone(), None)
 			.map_err(|e| HandlerError::DatabaseError(e))?;

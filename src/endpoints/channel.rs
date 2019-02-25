@@ -82,9 +82,7 @@ pub fn get_command(handler: State<DbConn>, channel: String, command: String) -> 
 pub fn create_command(handler: State<DbConn>, channel: String, command: Json<PostCommand>) -> JsonValue {
 	let result = handler.lock().expect("db lock").create_command(&channel, command.into_inner());
 	match result {
-		Ok(command) => json! ({
-			"data": command
-		}),
+		Ok(command) => json! ({ "data": command }),
 		Err(HandlerError::Error(e)) => generate_error(401, Some(e)),
 		Err(e) => {
 			println!("Internal error creating command: {:?}", e);

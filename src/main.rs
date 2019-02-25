@@ -42,5 +42,9 @@ fn main() {
 	    .mount("/auth", routes! [
 	    	endpoints::authorization::get_service_auth, endpoints::authorization::update_service_auth
 	    ])
+	    .mount("/quote", routes! [
+	    	endpoints::quote::get_quote, endpoints::quote::get_random_quote,
+	    	endpoints::quote::get_quote_by_id, endpoints::quote::create_quote
+	    ])
 	    .launch();
 }
