@@ -169,3 +169,10 @@ pub struct BotState {
 	pub services: Vec<ConnectedService>,
 	pub token: String
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Quote {
+	pub quote_id: i64,
+	pub response: Vec<Message>,
+	pub channel: String
+}

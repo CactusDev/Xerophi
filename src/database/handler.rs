@@ -12,6 +12,7 @@ use argon2::{Config as ArgonConfig, hash_encoded};
 use super::structures::*;
 use crate::endpoints::{
 	channel::{PostCommand, PostChannel},
+	quote::PostQuote,
 	authorization::{PostServiceAuth}
 };
 
@@ -90,7 +91,8 @@ impl<'cfg> DatabaseHandler<'cfg> {
 				let channel_collection = db.collection("channels");
 				match Channel::from_post(channel, password.unwrap()) {
 					Some(channel) => {
-						channel_collection.insert_one(to_bson(&channel).unwrap().as_document().unwrap().clone(), None).map_err(|e| HandlerError::DatabaseError(e))?;
+						channel_collection.insert_one(to_bson(&channel).unwrap().as_document().unwrap().clone(), None)
+							.map_err(|e| HandlerError::DatabaseError(e))?;
 						Ok(channel)
 					},
 					None => Err(HandlerError::InternalError)
@@ -106,9 +108,7 @@ impl<'cfg> DatabaseHandler<'cfg> {
 				"name": cmd,
 				"channel": channel
 			},
-			None => doc! {
-				"channel": channel
-			}
+			None => doc! { "channel": channel }
 		};
 
 		match &self.database {
@@ -253,5 +253,79 @@ impl<'cfg> DatabaseHandler<'cfg> {
 			},
 			None => Err(HandlerError::InternalError)
 		}
+	}
+
+	pub fn get_quote(&self, channel: &str, id: Option<u32>) -> HandlerResult<Vec<Quote>> {
+		let filter = match id {
+		    Some(id) => doc! {
+				"channel": channel,
+				"quote_id": id
+			},
+			None => doc! { "channel": channel }
+		};
+
+        let db = self.database.as_ref().expect("no database");
+		let quote_collection = db.collection("quotes");
+
+		match quote_collection.find(Some(filter), None) {
+			Ok(mut quotes) => {
+				let mut all_documents = Vec::new();
+				while quotes.has_next().unwrap_or(false) {
+					let doc = quotes.next_n(1);
+					match doc {
+						Ok(ref docs) => for doc in docs {
+				 	 		all_documents.push(from_bson::<Quote>(mongodb::Bson::Document(doc.clone())).unwrap());
+						},
+				 	 	Err(_) => break
+					}
+				}
+				Ok(all_documents)
+			},
+			Err(e) => Err(HandlerError::DatabaseError(e))
+		}
+	}
+
+	pub fn get_random_quote(&self, channel: &str) -> HandlerResult<Quote> {
+		let pipeline = vec![doc! {
+			"$sample": doc! {
+				"size": 1
+			}
+		},
+		doc! { "channel": channel }];
+
+        let db = self.database.as_ref().expect("no database");
+		let quote_collection = db.collection("quotes");
+		match quote_collection.aggregate(pipeline, None) {
+			Ok(mut cursor) => match cursor.drain_current_batch() {
+				Ok(batch) => match batch.as_slice() {
+					[first] => Ok(from_bson::<Quote>(mongodb::Bson::Document(first.clone())).unwrap()),
+					_ => Err(HandlerError::Error("no quotes".to_string()))
+				}
+				Err(_) => Err(HandlerError::InternalError)
+			},
+			Err(e) => Err(HandlerError::DatabaseError(e))
+		}
+	}
+
+	pub fn create_quote(&self, channel: &str, quote: PostQuote) -> HandlerResult<i64> {
+		let filter = doc! {
+			"channel": channel
+		};
+
+		let db = self.database.as_ref().expect("no database");
+		let quote_collection = db.collection("quotes");
+		let mut count = quote_collection.count(Some(filter), None)
+			.map_err(|e| HandlerError::DatabaseError(e))?;
+		count += 1;  // Set the ID for the next quote. Also prevents quote 1 from having id 0.
+
+		// Create the new quote.
+		let quote = Quote {
+			quote_id: count,
+			response: quote.response,
+			channel: quote.channel
+		};
+		quote_collection.insert_one(to_bson(&quote).unwrap().as_document().unwrap().clone(), None)
+			.map_err(|e| HandlerError::DatabaseError(e))?;
+		Ok(count)
 	}
 }
