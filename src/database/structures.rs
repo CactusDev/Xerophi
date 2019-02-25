@@ -1,5 +1,8 @@
 
-use crate::endpoints::channel::{PostCommand, PostChannel};
+use crate::endpoints::{
+	channel::PostChannel,
+	command::PostCommand
+};
 
 use std::{
 	vec::Vec

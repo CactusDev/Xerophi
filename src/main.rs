@@ -32,9 +32,7 @@ fn main() {
     rocket::ignite()
     	.manage(Mutex::new(connection))
 	    .mount("/channel", routes! [
-	    	endpoints::channel::get_channel, endpoints::channel::create_channel,
-	    	endpoints::channel::get_command, endpoints::channel::delete_command,
-	    	endpoints::channel::get_commands, endpoints::channel::create_command
+	    	endpoints::channel::get_channel, endpoints::channel::create_channel
 	    ])
 	    .mount("/state", routes! [
 	    	endpoints::state::get_channel_state, endpoints::state::get_channel_service_state
@@ -46,6 +44,10 @@ fn main() {
 	    	endpoints::quote::get_quote, endpoints::quote::get_random_quote,
 	    	endpoints::quote::get_quote_by_id, endpoints::quote::create_quote,
 	    	endpoints::quote::delete_quote
+	    ])
+	    .mount("/command", routes! [
+	    	endpoints::command::get_commands, endpoints::command::get_command,
+	    	endpoints::command::create_command, endpoints::command::delete_command
 	    ])
 	    .launch();
 }

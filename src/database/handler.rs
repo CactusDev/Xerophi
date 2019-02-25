@@ -11,9 +11,10 @@ use argon2::{Config as ArgonConfig, hash_encoded};
 
 use super::structures::*;
 use crate::endpoints::{
-	channel::{PostCommand, PostChannel},
+	channel::PostChannel,
 	quote::PostQuote,
-	authorization::{PostServiceAuth}
+	authorization::PostServiceAuth,
+	command::PostCommand
 };
 
 #[derive(Debug)]

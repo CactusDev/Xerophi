@@ -3,6 +3,7 @@ pub mod channel;
 pub mod state;
 pub mod authorization;
 pub mod quote;
+pub mod command;
 
 use rocket::{Response, http::{Status, ContentType}};
 use rocket_contrib::json::JsonValue;
