@@ -279,6 +279,10 @@ impl<'cfg> DatabaseHandler<'cfg> {
 				 	 	Err(_) => break
 					}
 				}
+                // TODO: no
+				if all_documents.len() == 0 {
+					return Err(HandlerError::Error("no quote".to_string()))
+				}
 				Ok(all_documents)
 			},
 			Err(e) => Err(HandlerError::DatabaseError(e))
