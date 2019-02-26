@@ -1,9 +1,13 @@
 
-use rocket_contrib::json::{JsonValue, Json};
+use rocket_contrib::json::Json;
 
-use rocket::State;
+use rocket::{
+	State, Response,
+	http::Status
+};
+
 use crate::{
-	DbConn, endpoints::generate_error,
+	DbConn, endpoints::{generate_error, generate_response},
 	database::handler::HandlerError
 };
 
@@ -15,11 +19,11 @@ pub struct PostServiceAuth {
 }
 
 #[get("/<channel>/<service>")]
-pub fn get_service_auth(handler: State<DbConn>, channel: String, service: String) -> JsonValue {
+pub fn get_service_auth<'r>(handler: State<DbConn>, channel: String, service: String) -> Response<'r> {
 	let auth = handler.lock().expect("db lock").get_service_auth(&channel, &service);
 
 	match auth {
-		Ok(auth) => json!({
+		Ok(auth) => generate_response(Status::Ok, json!({
 			"refresh": auth.refresh,
 			"expiration": auth.expiration,
 			"access": auth.access,
@@ -27,31 +31,31 @@ pub fn get_service_auth(handler: State<DbConn>, channel: String, service: String
 				"service": service,
 				"channel": channel				
 			})
-		}),
-		Err(HandlerError::Error(e)) => generate_error(404, Some(e)),
+		})),
+		Err(HandlerError::Error(_)) => generate_response(Status::NotFound, generate_error(404, None)),
 		Err(e) => {
 			println!("Internal error getting service auth: {:?}", e);
-			generate_error(500, None)
+			generate_response(Status::InternalServerError, generate_error(500, None))
 		}
 	}
 }
 
 #[patch("/<channel>/<service>/update", format = "json", data = "<data>")]
-pub fn update_service_auth(handler: State<DbConn>, channel: String, service: String, data: Json<PostServiceAuth>) -> JsonValue {
+pub fn update_service_auth<'r>(handler: State<DbConn>, channel: String, service: String, data: Json<PostServiceAuth>) -> Response<'r> {
 	let result = handler.lock().expect("db lock").update_service_auth(&channel, &service, data.into_inner());
 
 	match result {
-		Ok(()) => json!({
+		Ok(()) => generate_response(Status::Ok, json!({
 			"updated": true,
 			"meta": json!({
 				"service": service,
 				"channel": channel				
 			})
-		}),
-		Err(HandlerError::Error(e)) => generate_error(404, Some(e)),
+		})),
+		Err(HandlerError::Error(_)) => generate_response(Status::NotFound, generate_error(404, None)),
 		Err(e) => {
 			println!("Internal error getting service auth: {:?}", e);
-			generate_error(500, None)
+			generate_response(Status::InternalServerError, generate_error(500, None))
 		}
 	}
 }

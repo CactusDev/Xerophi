@@ -51,7 +51,7 @@ pub fn create_command<'r>(handler: State<DbConn>, channel: String, name: String,
 	let result = handler.lock().expect("db lock").create_command(&channel, &name, command.into_inner());
 	match result {
 		Ok(command) => generate_response(Status::Ok, json! ({ "data": command })),
-		Err(HandlerError::Error(e)) => generate_response(Status::Conflict, generate_error(409, None),
+		Err(HandlerError::Error(_)) => generate_response(Status::Conflict, generate_error(409, None)),
 		Err(e) => {
 			println!("Internal error creating command: {:?}", e);
 			generate_response(Status::InternalServerError, generate_error(500, None))
