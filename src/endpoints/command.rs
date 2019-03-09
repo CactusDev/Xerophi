@@ -22,7 +22,7 @@ pub struct PostCommand {
 
 #[get("/<channel>")]
 pub fn get_commands<'r>(handler: State<DbConn>, channel: String) -> Response<'r> {
-	let commands = handler.lock().expect("db lock").get_command(&channel, None);
+	let commands = handler.lock().expect("db lock").get_commands(&channel);
 	match commands {
 		Ok(cmds) => generate_response(Status::Ok, json!({ "data": cmds })),
 		Err(HandlerError::Error(_)) => generate_response(Status::Ok, json!([])),
@@ -35,9 +35,9 @@ pub fn get_commands<'r>(handler: State<DbConn>, channel: String) -> Response<'r>
 
 #[get("/<channel>/<command>")]
 pub fn get_command<'r>(handler: State<DbConn>, channel: String, command: String) -> Response<'r> {
-	let command = handler.lock().expect("db lock").get_command(&channel, Some(command));
+	let command = handler.lock().expect("db lock").get_command(&channel, &command);
 	match command {
-		Ok(cmds) => generate_response(Status::Ok, json!({ "data": cmds[0] })),
+		Ok(cmds) => generate_response(Status::Ok, json!({ "data": cmds })),
 		Err(HandlerError::Error(_)) => generate_response(Status::NotFound, json!({})),
 		Err(e) => {
 			println!("Internal error getting command: {:?}", e);

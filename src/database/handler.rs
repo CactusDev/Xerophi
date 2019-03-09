@@ -94,14 +94,8 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		}
 	}
 
-	pub fn get_command(&self, channel: &str, command: Option<String>) -> HandlerResult<Vec<Command>> {
-		let filter = match command {
-			Some(cmd) => doc! {
-				"name": cmd,
-				"channel": channel
-			},
-			None => doc! { "channel": channel }
-		};
+	pub fn get_commands(&self, channel: &str) -> HandlerResult<Vec<Command>> {
+		let filter = doc! { "channel": channel };
 
         let db = self.database.as_ref().expect("no database");
 		let command_collection = db.collection("commands");
@@ -125,8 +119,23 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		Ok(all_documents)
 	}
 
+	pub fn get_command(&self, channel: &str, command: &str) -> HandlerResult<Command> {
+		let filter = doc! {
+			"name": command,
+			"channel": channel
+		};
+
+        let db = self.database.as_ref().expect("no database");
+		let command_collection = db.collection("commands");
+		let mut document = command_collection.find_one(Some(filter), None).map_err(|e| HandlerError::DatabaseError(e))?;
+		match document {
+			Some(doc) => Ok(from_bson::<Command>(mongodb::Bson::Document(doc.clone())).unwrap()),
+			_ => Err(HandlerError::Error("no command".to_string()))
+		}
+	}
+
 	pub fn create_command(&self, channel: &str, name: &str, command: PostCommand) -> HandlerResult<Command> {
-		if let Ok(_) = self.get_command(channel, Some(name.to_string())) {
+		if let Ok(_) = self.get_command(channel, name) {
 			return Err(HandlerError::Error("command exists".to_string()));
 		}
 
@@ -139,7 +148,7 @@ impl<'cfg> DatabaseHandler<'cfg> {
 	}
 
 	pub fn remove_command(&self, channel: &str, command: &str) -> HandlerResult<()> {
-		if let Err(_) = self.get_command(channel, Some(command.to_string())) {
+		if let Err(_) = self.get_command(channel, command) {
 			return Err(HandlerError::Error("command does not exist".to_string()));
 		}
 
