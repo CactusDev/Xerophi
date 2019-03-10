@@ -25,7 +25,7 @@ pub fn get_commands<'r>(handler: State<DbConn>, channel: String) -> Response<'r>
 	let commands = handler.lock().expect("db lock").get_commands(&channel);
 	match commands {
 		Ok(cmds) => generate_response(Status::Ok, json!({ "data": cmds })),
-		Err(HandlerError::Error(_)) => generate_response(Status::Ok, json!([])),
+		Err(HandlerError::Error(_)) => generate_response(Status::Ok, json!({ "data": [] })),
 		Err(e) => {
 			println!("Internal error getting command: {:?}", e);
 			generate_response(Status::InternalServerError, generate_error(500, None))
