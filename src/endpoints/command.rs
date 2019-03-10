@@ -75,3 +75,20 @@ pub fn delete_command<'r>(handler: State<DbConn>, channel: String, command: Stri
 		}
 	}
 }
+
+#[patch("/<channel>/<name>", format = "json", data = "<command>")]
+pub fn edit_command<'r>(handler: State<DbConn>, channel: String, name: String, command: Json<PostCommand>) -> Response<'r> {
+	let result = handler.lock().expect("db lock").update_command(&channel, &name, command.into_inner());
+	match result {
+		Ok(()) => generate_response(Status::Ok, json! ({
+			"meta": json! ({
+				"updated": true
+			})
+		})),
+		Err(HandlerError::Error(e)) => generate_response(Status::NotFound, generate_error(404, Some(e))),
+		Err(e) => {
+			println!("Internal error updating command: {:?}", e);
+			generate_response(Status::InternalServerError, generate_error(500, None))
+		}
+	}
+}

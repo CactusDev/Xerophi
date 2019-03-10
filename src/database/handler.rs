@@ -127,7 +127,7 @@ impl<'cfg> DatabaseHandler<'cfg> {
 
         let db = self.database.as_ref().expect("no database");
 		let command_collection = db.collection("commands");
-		let mut document = command_collection.find_one(Some(filter), None).map_err(|e| HandlerError::DatabaseError(e))?;
+		let document = command_collection.find_one(Some(filter), None).map_err(|e| HandlerError::DatabaseError(e))?;
 		match document {
 			Some(doc) => Ok(from_bson::<Command>(mongodb::Bson::Document(doc.clone())).unwrap()),
 			_ => Err(HandlerError::Error("no command".to_string()))
@@ -159,6 +159,28 @@ impl<'cfg> DatabaseHandler<'cfg> {
 			"name": command
 		}, None).map_err(|e| HandlerError::DatabaseError(e))?;
 		Ok(())
+	}
+
+	pub fn update_command(&self, channel: &str, name: &str, command: PostCommand) -> HandlerResult<()> {
+		if let Err(_) = self.get_command(channel, name) {
+			return Err(HandlerError::Error("command does not exist".to_string()));
+		}
+
+        let db = self.database.as_ref().expect("no database");
+		let command_collection = db.collection("commands");
+		let command = to_bson(&command.response).unwrap();
+
+		match command_collection.update_one(doc! {
+			"channel": channel,
+			"name": name
+		}, doc! {
+			"$set": doc! {
+				"response": command
+			}
+		}, None) {
+			Ok(_) => Ok(()),
+			Err(e) => Err(HandlerError::DatabaseError(e))
+		}
 	}
 
 	pub fn get_config(&self, channel: &str) -> HandlerResult<Config> {
