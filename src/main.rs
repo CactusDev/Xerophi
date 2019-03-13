@@ -50,5 +50,9 @@ fn main() {
 	    	endpoints::command::create_command, endpoints::command::delete_command,
 	    	endpoints::command::edit_command
 	    ])
+	    .mount("/trust", routes! [
+	    	endpoints::trusts::get_trust, endpoints::trusts::delete_trust,
+	    	endpoints::trusts::create_trust
+	    ])
 	    .launch();
 }

@@ -335,4 +335,44 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		}, None).map_err(|e| HandlerError::DatabaseError(e))?;
 		Ok(())
 	}
+
+	pub fn create_trust(&self, channel: &str, user: &str) -> HandlerResult<Trust> {
+		let db = self.database.as_ref().expect("no database");
+		let trust_collection = db.collection("trusts");
+
+		let trust = Trust {
+			trusted: user.to_string(),
+			channel: channel.to_string()
+		};
+
+		trust_collection.insert_one(to_bson(&trust).unwrap().as_document().unwrap().clone(), None)
+			.map_err(|e| HandlerError::DatabaseError(e))?;
+		Ok(trust)
+	}
+
+	pub fn get_trust(&self, channel: &str, user: &str) -> HandlerResult<Trust> {
+		let filter = doc! {
+			"trusted": user,
+			"channel": channel
+		};
+
+        let db = self.database.as_ref().expect("no database");
+		let trust_collection = db.collection("trusts");
+		match trust_collection.find_one(Some(filter), None) {
+			Ok(Some(trust)) => Ok(from_bson::<Trust>(mongodb::Bson::Document(trust)).unwrap()),
+			Ok(None) => Err(HandlerError::Error("no trust for user".to_string())),
+			Err(e) => Err(HandlerError::DatabaseError(e))
+		}
+	}
+
+	pub fn delete_trust(&self, channel: &str, user: &str) -> HandlerResult<()> {
+		let db = self.database.as_ref().expect("no database");
+		let trust_collection = db.collection("trusts");
+
+		trust_collection.delete_one(doc! {
+			"channel": channel,
+			"trusted": user
+		}, None).map_err(|e| HandlerError::DatabaseError(e))?;
+		Ok(())
+	}
 }

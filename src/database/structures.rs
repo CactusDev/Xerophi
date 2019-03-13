@@ -179,3 +179,9 @@ pub struct Quote {
 	pub response: Vec<Message>,
 	pub channel: String
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Trust {
+	pub trusted: String,
+	pub channel: String
+}
