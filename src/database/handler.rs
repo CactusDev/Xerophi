@@ -158,6 +158,13 @@ impl<'cfg> DatabaseHandler<'cfg> {
 			"channel": channel,
 			"name": command
 		}, None).map_err(|e| HandlerError::DatabaseError(e))?;
+		// Also remove any aliases associated with it
+		let alias_collection = db.collection("aliases");
+		alias_collection.delete_one(doc! {
+			"channel": channel,
+			"command": command
+		}, None).map_err(|e| HandlerError::DatabaseError(e))?;
+		
 		Ok(())
 	}
 
