@@ -54,5 +54,9 @@ fn main() {
 	    	endpoints::trusts::get_trust, endpoints::trusts::delete_trust,
 	    	endpoints::trusts::create_trust
 	    ])
+	    .mount("/alias", routes! [
+	    	endpoints::alias::get_aliases, endpoints::alias::get_alias,
+	    	endpoints::alias::create_alias, endpoints::alias::delete_alias
+	    ])
 	    .launch();
 }
