@@ -185,3 +185,10 @@ pub struct Trust {
 	pub trusted: String,
 	pub channel: String
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Alias {
+	pub channel: String,
+	pub command: String,
+	pub alias: String
+}

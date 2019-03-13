@@ -375,4 +375,81 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		}, None).map_err(|e| HandlerError::DatabaseError(e))?;
 		Ok(())
 	}
+
+	pub fn get_aliases(&self, channel: &str) -> HandlerResult<Vec<Command>> {
+		let filter = doc! {
+			"channel": channel,
+		};
+
+        let db = self.database.as_ref().expect("no database");
+		let alias_collection = db.collection("aliases");
+
+		match alias_collection.find(Some(filter), None) {
+			Ok(mut commands) => {
+				let mut all_documents = Vec::new();
+				while commands.has_next().unwrap_or(false) {
+					let doc = commands.next_n(1);
+					match doc {
+						Ok(ref docs) => for doc in docs {
+							let alias = from_bson::<Alias>(mongodb::Bson::Document(doc.clone())).unwrap();
+				 	 		let command = self.get_command(channel, &alias.command)?;
+				 	 		all_documents.push(command);
+						},
+				 	 	Err(_) => break
+					}
+				}
+                // TODO: no
+				if all_documents.len() == 0 {
+					return Err(HandlerError::Error("no aliases".to_string()))
+				}
+				Ok(all_documents)
+			},
+			Err(e) => Err(HandlerError::DatabaseError(e))
+		}
+	}
+
+	pub fn get_alias(&self, channel: &str, command: &str) -> HandlerResult<Command> {
+		let filter = doc! {
+			"channel": channel,
+			"command": command
+		};
+
+		let db = self.database.as_ref().expect("no database");
+		let alias_collection = db.collection("aliases");
+		
+		let document = alias_collection.find_one(Some(filter), None).map_err(|e| HandlerError::DatabaseError(e))?;
+		match document {
+			Some(doc) => {
+				let alias = from_bson::<Alias>(mongodb::Bson::Document(doc.clone())).unwrap();
+				Ok(self.get_command(channel, &alias.command)?)
+			},
+			_ => Err(HandlerError::Error("no alias".to_string()))
+		}
+	}
+
+	pub fn create_alias(&self, channel: &str, alias: &str, command: &str) -> HandlerResult<Alias> {
+		let db = self.database.as_ref().expect("no database");
+		let alias_collection = db.collection("aliases");
+
+		let alias = Alias {
+			alias: alias.to_string(),
+			command: command.to_string(),
+			channel: channel.to_string()
+		};
+
+		alias_collection.insert_one(to_bson(&alias).unwrap().as_document().unwrap().clone(), None)
+			.map_err(|e| HandlerError::DatabaseError(e))?;
+		Ok(alias)
+	}
+
+	pub fn delete_alias(&self, channel: &str, command: &str) -> HandlerResult<()> {
+		let db = self.database.as_ref().expect("no database");
+		let alias_collection = db.collection("aliases");
+
+		alias_collection.delete_one(doc! {
+			"channel": channel,
+			"alias": command
+		}, None).map_err(|e| HandlerError::DatabaseError(e))?;
+		Ok(())
+	}
 }
