@@ -58,5 +58,9 @@ fn main() {
 	    	endpoints::alias::get_aliases, endpoints::alias::get_alias,
 	    	endpoints::alias::create_alias, endpoints::alias::delete_alias
 	    ])
+	    .mount("/social", routes! [
+	    	endpoints::social::get_socials, endpoints::social::get_social,
+	    	endpoints::social::create_social, endpoints::social::delete_social
+	    ])
 	    .launch();
 }

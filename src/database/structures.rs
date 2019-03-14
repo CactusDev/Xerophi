@@ -192,3 +192,10 @@ pub struct Alias {
 	pub command: String,
 	pub alias: String
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct SocialService {
+	pub channel: String,
+	pub service: String,
+	pub url: String
+}

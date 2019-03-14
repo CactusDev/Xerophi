@@ -488,4 +488,71 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		}, None).map_err(|e| HandlerError::DatabaseError(e))?;
 		Ok(())
 	}
+
+	pub fn get_socials(&self, channel: &str) -> HandlerResult<Vec<SocialService>> {
+		let filter = doc! { "channel": channel };
+
+        let db = self.database.as_ref().expect("no database");
+		let social_collection = db.collection("socials");
+		let mut cursor = social_collection.find(Some(filter), None).map_err(|e| HandlerError::DatabaseError(e))?;
+
+		let mut all_documents = vec! [];
+
+		while cursor.has_next().unwrap_or(false) {
+			let doc = cursor.next_n(1);
+			match doc {
+			 	Ok(ref docs) => for doc in docs {
+			 		all_documents.push(from_bson::<SocialService>(mongodb::Bson::Document(doc.clone())).unwrap());
+			 	},
+			 	Err(_) => break
+			 }
+		}
+		// TODO: no
+		if all_documents.len() == 0 {
+			return Err(HandlerError::Error("no socials".to_string()))
+		}
+		Ok(all_documents)		
+	}
+
+	pub fn get_social_service(&self, channel: &str, service: &str) -> HandlerResult<SocialService> {
+		let filter = doc! {
+			"channel": channel,
+			"service": service
+		};
+
+		let db = self.database.as_ref().expect("no database");
+		let social_collection = db.collection("socials");
+
+		let document = social_collection.find_one(Some(filter), None).map_err(|e| HandlerError::DatabaseError(e))?;
+		match document {
+			Some(doc) => Ok(from_bson::<SocialService>(mongodb::Bson::Document(doc.clone())).unwrap()),
+			_ => Err(HandlerError::Error("no social service".to_string()))
+		}
+	}
+
+	pub fn create_social_service(&self, channel: &str, service: &str, url: &str) -> HandlerResult<SocialService> {
+		let db = self.database.as_ref().expect("no database");
+		let social_collection = db.collection("socials");
+
+		let social = SocialService {
+			channel: channel.to_string(),
+			service: service.to_string(),
+			url: url.to_string()
+		};
+
+		social_collection.insert_one(to_bson(&social).unwrap().as_document().unwrap().clone(), None)
+			.map_err(|e| HandlerError::DatabaseError(e))?;
+		Ok(social)
+	}
+
+	pub fn remove_social(&self, channel: &str, service: &str) -> HandlerResult<()> {
+		let db = self.database.as_ref().expect("no database");
+		let social_collection = db.collection("socials");
+
+		social_collection.delete_one(doc! {
+			"channel": channel,
+			"service": service
+		}, None).map_err(|e| HandlerError::DatabaseError(e))?;
+		Ok(())
+	}
 }
