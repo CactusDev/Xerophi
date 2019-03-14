@@ -14,7 +14,7 @@ use crate::endpoints::{
 	channel::PostChannel,
 	quote::PostQuote,
 	authorization::PostServiceAuth,
-	command::PostCommand
+	command::{PostCommand, PostCount}
 };
 
 #[derive(Debug)]
@@ -186,6 +186,35 @@ impl<'cfg> DatabaseHandler<'cfg> {
 			}
 		}, None) {
 			Ok(_) => Ok(()),
+			Err(e) => Err(HandlerError::DatabaseError(e))
+		}
+	}
+
+	pub fn update_count(&self, channel: &str, command: &str, count: PostCount) -> HandlerResult<i32> {
+		let db = self.database.as_ref().expect("no database");
+		let command_collection = db.collection("commands");
+		let cmd = self.get_command(channel, command)?;
+		let mut current = cmd.meta.count;
+
+
+		let (operator, remaining) = count.count.split_at(1);
+		let remaining = remaining.parse::<i32>().map_err(|_| HandlerError::Error("invalid count".to_string()))?;
+
+		match operator {
+			"+" => current += remaining,
+			"-" => current -= remaining,
+			_ => return Err(HandlerError::Error("invalid operator".to_string()))
+		}
+
+		match command_collection.update_one(doc! {
+			"channel": channel,
+			"name": command
+		}, doc! {
+			"$set": doc! {
+				"count": current
+			}
+		}, None) {
+			Ok(_) => Ok(current),
 			Err(e) => Err(HandlerError::DatabaseError(e))
 		}
 	}

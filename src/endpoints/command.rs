@@ -20,6 +20,11 @@ pub struct PostCommand {
 	pub services: Vec<String>
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct PostCount {
+	pub count: String
+}
+
 #[get("/<channel>")]
 pub fn get_commands<'r>(handler: State<DbConn>, channel: String) -> Response<'r> {
 	let commands = handler.lock().expect("db lock").get_commands(&channel);
@@ -88,6 +93,24 @@ pub fn edit_command<'r>(handler: State<DbConn>, channel: String, name: String, c
 		Err(HandlerError::Error(e)) => generate_response(Status::NotFound, generate_error(404, Some(e))),
 		Err(e) => {
 			println!("Internal error updating command: {:?}", e);
+			generate_response(Status::InternalServerError, generate_error(500, None))
+		}
+	}
+}
+
+#[patch("/<channel>/<name>/count", format = "json", data = "<count>")]
+pub fn update_count<'r>(handler: State<DbConn>, channel: String, name: String, count: Json<PostCount>) -> Response<'r> {
+	let result = handler.lock().expect("db lock").update_count(&channel, &name, count.into_inner());
+	match result {
+		Ok(count) => generate_response(Status::Ok, json!({
+			"data": json!({
+				"updated": true,
+				"count": count
+			})
+		})),
+		Err(HandlerError::Error(e)) => generate_response(Status::NotFound, generate_error(404, Some(e))),
+		Err(e) => {
+			println!("Internal error updating count: {:?}", e);
 			generate_response(Status::InternalServerError, generate_error(500, None))
 		}
 	}
