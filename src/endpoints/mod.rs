@@ -6,6 +6,7 @@ pub mod quote;
 pub mod command;
 pub mod trusts;
 pub mod alias;
+pub mod social;
 
 use rocket::{Response, http::{Status, ContentType}};
 use rocket_contrib::json::JsonValue;
