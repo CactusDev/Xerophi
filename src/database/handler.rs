@@ -401,6 +401,37 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		}
 	}
 
+	pub fn get_trusts(&self, channel: &str) -> HandlerResult<Vec<Trust>> {
+		let filter = doc! {
+			"channel": channel,
+		};
+
+        let db = self.database.as_ref().expect("no database");
+		let trust_collection = db.collection("tusts");
+
+		match trust_collection.find(Some(filter), None) {
+			Ok(mut trusts) => {
+				let mut all_documents = Vec::new();
+				while trusts.has_next().unwrap_or(false) {
+					let doc = trusts.next_n(1);
+					match doc {
+						Ok(ref docs) => for doc in docs {
+							let trust = from_bson::<Trust>(mongodb::Bson::Document(doc.clone())).unwrap();
+				 	 		all_documents.push(trust);
+						},
+				 	 	Err(_) => break
+					}
+				}
+                // TODO: no
+				if all_documents.len() == 0 {
+					return Err(HandlerError::Error("no trusts".to_string()))
+				}
+				Ok(all_documents)
+			},
+			Err(e) => Err(HandlerError::DatabaseError(e))
+		}
+	}
+
 	pub fn delete_trust(&self, channel: &str, user: &str) -> HandlerResult<()> {
 		let db = self.database.as_ref().expect("no database");
 		let trust_collection = db.collection("trusts");

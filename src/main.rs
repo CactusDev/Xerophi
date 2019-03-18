@@ -51,8 +51,8 @@ fn main() {
 	    	endpoints::command::edit_command, endpoints::command::update_count
 	    ])
 	    .mount("/trust", routes! [
-	    	endpoints::trusts::get_trust, endpoints::trusts::delete_trust,
-	    	endpoints::trusts::create_trust
+	    	endpoints::trusts::get_trust, endpoints::trusts::get_trusts,
+	    	endpoints::trusts::delete_trust, endpoints::trusts::create_trust
 	    ])
 	    .mount("/alias", routes! [
 	    	endpoints::alias::get_aliases, endpoints::alias::get_alias,

@@ -11,6 +11,19 @@ use crate::{
 	}
 };
 
+#[get("/<channel>", rank = 1)]
+pub fn get_trusts<'r>(handler: State<DbConn>, channel: String) -> Response<'r> {
+	let trusts = handler.lock().expect("db lock").get_trusts(&channel);
+	match trusts {
+		Ok(trusts) => generate_response(Status::Ok, json!({ "data": trusts })),
+		Err(HandlerError::Error(e)) => generate_response(Status::NotFound, generate_error(404, Some(e))),
+		Err(e) => {
+			println!("Internal error getting trusts: {:?}", e);
+			generate_response(Status::InternalServerError, generate_error(500, None))
+		}
+	}
+}
+
 #[get("/<channel>/<user>", rank = 1)]
 pub fn get_trust<'r>(handler: State<DbConn>, channel: String, user: String) -> Response<'r> {
 	let trust = handler.lock().expect("db lock").get_trust(&channel, &user);
@@ -24,7 +37,7 @@ pub fn get_trust<'r>(handler: State<DbConn>, channel: String, user: String) -> R
 	}
 }
 
-#[get("/<channel>/<user>", rank = 2)]
+#[post("/<channel>/<user>", rank = 2)]
 pub fn create_trust<'r>(handler: State<DbConn>, channel: String, user: String) -> Response<'r> {
 	let trust = handler.lock().expect("db lock").create_trust(&channel, &user);
 	match trust {
