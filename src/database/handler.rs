@@ -28,6 +28,8 @@ type HandlerResult<T> = Result<T, HandlerError>;
 
 pub struct DatabaseHandler<'cfg> {
 	url: String,
+	user: String,
+	password: String,
 	database: Option<Database>,
 	argon: ArgonConfig<'cfg>,
 	salt: String
@@ -35,12 +37,14 @@ pub struct DatabaseHandler<'cfg> {
 
 impl<'cfg> DatabaseHandler<'cfg> {
 
-	pub fn new(host: &str, port: u16, key: &'cfg str, salt: &str) -> Self {
+	pub fn new(username: &str, password: &str, host: &str, port: u32, db: &str, key: &'cfg str, salt: &str) -> Self {
 		let mut argon = ArgonConfig::default();
 		argon.secret = key.as_bytes();
 
 		DatabaseHandler {
-			url: format!("mongodb://{}:{}", host, port),
+			url: format!("mongodb://{}:{}/{}", host, port, db),
+			user: username.to_string(),
+			password: password.to_string(),
 			database: None,
 			argon,
 			salt: salt.to_string()
@@ -51,6 +55,8 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		match Client::with_uri(&self.url) {
 			Ok(client) => {
 				let database = client.db(database);
+				database.auth(&self.user, &self.password).map_err(|e| HandlerError::DatabaseError(e))?;
+				
 				self.database = Some(database);
 				Ok(())
 			},
@@ -129,7 +135,10 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		let command_collection = db.collection("commands");
 		let document = command_collection.find_one(Some(filter), None).map_err(|e| HandlerError::DatabaseError(e))?;
 		match document {
-			Some(doc) => Ok(from_bson::<Command>(mongodb::Bson::Document(doc.clone())).unwrap()),
+			Some(doc) => match from_bson::<Command>(mongodb::Bson::Document(doc.clone())) {
+				Ok(cmd) => Ok(cmd),
+				_ => Err(HandlerError::Error("no command".to_string()))
+			},
 			_ => Err(HandlerError::Error("no command".to_string()))
 		}
 	}
