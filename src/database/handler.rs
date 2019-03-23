@@ -382,6 +382,10 @@ impl<'cfg> DatabaseHandler<'cfg> {
 	}
 
 	pub fn create_trust(&self, channel: &str, user: &str) -> HandlerResult<Trust> {
+		if let Ok(_) = self.get_trust(channel, user) {
+			return Err(HandlerError::Error("already trusted".to_string()));
+		}
+
 		let db = self.database.as_ref().expect("no database");
 		let trust_collection = db.collection("trusts");
 
@@ -416,7 +420,7 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		};
 
         let db = self.database.as_ref().expect("no database");
-		let trust_collection = db.collection("tusts");
+		let trust_collection = db.collection("trusts");
 
 		match trust_collection.find(Some(filter), None) {
 			Ok(mut trusts) => {
@@ -442,6 +446,10 @@ impl<'cfg> DatabaseHandler<'cfg> {
 	}
 
 	pub fn delete_trust(&self, channel: &str, user: &str) -> HandlerResult<()> {
+		if let Err(_) = self.get_trust(channel, user) {
+			return Err(HandlerError::Error("trust does not exist".to_string()));
+		}
+
 		let db = self.database.as_ref().expect("no database");
 		let trust_collection = db.collection("trusts");
 

@@ -52,9 +52,13 @@ pub fn create_trust<'r>(handler: State<DbConn>, channel: String, user: String) -
 
 #[delete("/<channel>/<user>", rank = 3)]
 pub fn delete_trust<'r>(handler: State<DbConn>, channel: String, user: String) -> Response<'r> {
-	let trust = handler.lock().expect("db lock").delete_trust(&channel, &user);
-	match trust {
-		Ok(()) => generate_response(Status::Ok, json!({ "data": json!({ "deleted": true }) })),
+	let result = handler.lock().expect("db lock").delete_trust(&channel, &user);
+	match result {
+		Ok(()) => generate_response(Status::Ok, json! ({
+			"meta": json! ({
+				"deleted": true
+			})
+		})),
 		Err(HandlerError::Error(e)) => generate_response(Status::NotFound, generate_error(404, Some(e))),
 		Err(e) => {
 			println!("Internal error deleting trust: {:?}", e);
