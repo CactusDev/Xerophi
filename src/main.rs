@@ -1,4 +1,4 @@
-#![feature(proc_macro_hygiene, decl_macro, result_map_or_else)]
+#![feature(proc_macro_hygiene, decl_macro)]
 
 mod endpoints;
 mod database;
@@ -47,7 +47,7 @@ fn main() {
 			    .mount("/quote", routes! [
 			    	endpoints::quote::get_quote, endpoints::quote::get_random_quote,
 			    	endpoints::quote::get_quote_by_id, endpoints::quote::create_quote,
-			    	endpoints::quote::delete_quote
+			    	endpoints::quote::delete_quote, endpoints::quote::edit_quote
 			    ])
 			    .mount("/command", routes! [
 			    	endpoints::command::get_commands, endpoints::command::get_command,

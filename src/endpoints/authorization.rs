@@ -29,7 +29,11 @@ pub fn get_service_auth<'r>(handler: State<DbConn>, channel: String, service: St
 			"access": auth.access,
 			"meta": json!({
 				"service": service,
-				"channel": channel				
+				"channel": channel,
+				"bot": json!({
+					"username": "CactusBotDev",
+					"id": "25873"
+				})		
 			})
 		})),
 		Err(HandlerError::Error(_)) => generate_response(Status::NotFound, generate_error(404, None)),

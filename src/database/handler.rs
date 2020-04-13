@@ -285,9 +285,11 @@ impl<'cfg> DatabaseHandler<'cfg> {
         let db = self.database.as_ref().expect("no database");
 		let authorization_collection = db.collection("authorization");
 		match authorization_collection.update_one(filter, doc! {
-			"refresh": &auth.refresh.unwrap_or("".into()),
-			"expires": &auth.expiration.unwrap_or("".into()),
-			"access": &auth.access
+			"$set": doc! {
+				"refresh": &auth.refresh.unwrap_or("".into()),
+				"expires": &auth.expiration.unwrap_or("".into()),
+				"access": &auth.access
+			}
 		}, Some(opts)) {
 			Ok(_) => Ok(()),
 			Err(e) => Err(HandlerError::DatabaseError(e))
@@ -368,6 +370,26 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		quote_collection.insert_one(to_bson(&quote).unwrap().as_document().unwrap().clone(), None)
 			.map_err(|e| HandlerError::DatabaseError(e))?;
 		Ok(count)
+	}
+
+	pub fn edit_quote(&self, channel: &str, id: u32, quote: PostQuote) -> HandlerResult<()> {
+		let filter = doc! {
+			"quote_id": id,
+			"channel": channel
+		};
+
+		let db = self.database.as_ref().expect("no database");
+		let quote_collection = db.collection("quotes");
+		let quote_response = to_bson(&quote.response).unwrap();
+
+		match quote_collection.update_one(filter, doc! {
+			"$set": doc! {
+				"response": quote_response
+			}
+		}, None) {
+			Ok(_) => Ok(()),
+			Err(e) => Err(HandlerError::DatabaseError(e))
+		}
 	}
 
 	pub fn delete_quote(&self, channel: &str, quote: u32) -> HandlerResult<()> {

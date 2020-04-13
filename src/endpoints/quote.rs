@@ -88,3 +88,16 @@ pub fn delete_quote<'r>(handler: State<DbConn>, channel: String, id: u32) -> Res
 		}
 	}
 }
+
+#[patch("/<channel>/<id>", rank = 5, format = "json", data = "<quote>")]
+pub fn edit_quote<'r>(handler: State<DbConn>, channel: String, id: u32, quote: Json<PostQuote>) -> Response<'r> {
+	let result = handler.lock().expect("db lock").edit_quote(&channel, id, quote.into_inner());
+	match result {
+		Ok(()) => generate_response(Status::NoContent, json!({})),
+		Err(HandlerError::Error(_)) => generate_response(Status::NotFound, json!({})),
+		Err(e) => {
+			println!("Internal error editing quote: {:?}", e);
+			generate_response(Status::InternalServerError, generate_error(500, None))
+		}
+	}
+}
