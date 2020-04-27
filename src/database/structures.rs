@@ -199,3 +199,13 @@ pub struct SocialService {
 	pub service: String,
 	pub url: String
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct UserOffences {
+	pub channel: String,
+	pub service: String,
+	pub user: String,
+	pub caps: usize,
+	pub emoji: usize,
+	pub urls: usize
+}

@@ -625,4 +625,47 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		}, None).map_err(|e| HandlerError::DatabaseError(e))?;
 		Ok(())
 	}
+
+	pub fn get_offences(&self, channel: &str, user: &str, service: &str) -> HandlerResult<UserOffences> {
+		let filter = doc! {
+			"channel": channel,
+			"user": user,
+			"service": service
+		};
+
+		let db = self.database.as_ref().expect("no database");
+		let offences_collection = db.collection("offences");
+
+		let document = offences_collection.find_one(Some(filter), None).map_err(|e| HandlerError::DatabaseError(e))?;
+		match document {
+			Some(doc) => Ok(from_bson::<UserOffences>(mongodb::Bson::Document(doc.clone())).unwrap()),
+			_ => Err(HandlerError::Error("no offences".to_string()))
+		}
+	}
+
+	pub fn create_offence(&self, channel: &str, user: &str, service: &str) -> HandlerResult<UserOffences> {
+		let db = self.database.as_ref().expect("no database");
+		let offences_collection = db.collection("offences");
+
+		let offence = UserOffences {
+			channel: channel.to_string(),
+			service: service.to_string(),
+			user: user.to_string(),
+			caps: 0,
+			emoji: 0,
+			urls: 0
+		};
+
+		offences_collection.insert_one(to_bson(&offence).unwrap().as_document().unwrap().clone(), None)
+			.map_err(|e| HandlerError::DatabaseError(e))?;
+		Ok(offence)
+	}
+
+	fn get_or_create_offence(&self, channel: &str, user: &str, service: &str) -> UserOffences {
+		self.get_offences(channel, user, service).unwrap_or_else(|_| self.create_offence(channel, user, service).unwrap())
+	}
+
+	pub fn update_offence(&self, channel: &str, user: &str, service: &str, count: UserOffences) {
+
+	}
 }
