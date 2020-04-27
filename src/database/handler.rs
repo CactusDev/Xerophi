@@ -14,7 +14,7 @@ use crate::endpoints::{
 	channel::PostChannel,
 	quote::PostQuote,
 	authorization::PostServiceAuth,
-	command::{PostCommand, PostCount}
+	command::PostCommand
 };
 
 #[derive(Debug)]
@@ -199,7 +199,7 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		}
 	}
 
-	pub fn update_count(&self, channel: &str, command: &str, count: PostCount) -> HandlerResult<i32> {
+	pub fn update_count(&self, channel: &str, command: &str, count: UpdateCount) -> HandlerResult<i32> {
 		let db = self.database.as_ref().expect("no database");
 		let command_collection = db.collection("commands");
 		let cmd = self.get_command(channel, command)?;
@@ -665,7 +665,31 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		self.get_offences(channel, user, service).unwrap_or_else(|_| self.create_offence(channel, user, service).unwrap())
 	}
 
-	pub fn update_offence(&self, channel: &str, user: &str, service: &str, count: UserOffences) {
+	pub fn update_offence(&self, channel: &str, user: &str, service: &str, offence_type: &str, count: UpdateCount) -> HandlerResult<()> {
+		let db = self.database.as_ref().expect("no database");
+		let offences_collection = db.collection("offences");
+		let mut offence = self.get_or_create_offence(channel, user, service);
+		let mut current = offence.get_attribute(offence_type).ok_or(HandlerError::Error("invalid offence type".to_string()))?;
 
+		let (operator, remaining) = count.count.split_at(1);
+		let remaining = remaining.parse::<i32>().map_err(|_| HandlerError::Error("invalid count".to_string()))?;
+
+		match operator {
+			"+" => current += remaining,
+			"-" => current -= remaining,
+			_ => return Err(HandlerError::Error("invalid operator".to_string()))
+		}
+		offence = offence.set_attribute(offence_type, current).map_err(|_| HandlerError::Error("invalid offence type".to_string()))?;
+
+		match offences_collection.update_one(doc! {
+			"channel": channel,
+			"service": service,
+			"user": user
+		}, doc! {
+			"$set": bson::to_bson(&offence).unwrap()
+		}, None) {
+			Ok(_) => Ok(()),
+			Err(e) => Err(HandlerError::DatabaseError(e))
+		}
 	}
 }

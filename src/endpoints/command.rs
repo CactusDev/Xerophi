@@ -9,7 +9,7 @@ use rocket::{
 use crate::{
 	DbConn, endpoints::{generate_error, generate_response},
 	database::{
-		structures::Message,
+		structures::{Message, UpdateCount},
 		handler::HandlerError
 	}
 };
@@ -18,11 +18,6 @@ use crate::{
 pub struct PostCommand {
 	pub response: Vec<Message>,
 	pub services: Vec<String>
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct PostCount {
-	pub count: String
 }
 
 #[get("/<channel>")]
@@ -99,7 +94,7 @@ pub fn edit_command<'r>(handler: State<DbConn>, channel: String, name: String, c
 }
 
 #[patch("/<channel>/<name>/count", format = "json", data = "<count>")]
-pub fn update_count<'r>(handler: State<DbConn>, channel: String, name: String, count: Json<PostCount>) -> Response<'r> {
+pub fn update_count<'r>(handler: State<DbConn>, channel: String, name: String, count: Json<UpdateCount>) -> Response<'r> {
 	let result = handler.lock().expect("db lock").update_count(&channel, &name, count.into_inner());
 	match result {
 		Ok(count) => generate_response(Status::Ok, json!({

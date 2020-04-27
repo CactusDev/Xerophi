@@ -205,7 +205,34 @@ pub struct UserOffences {
 	pub channel: String,
 	pub service: String,
 	pub user: String,
-	pub caps: usize,
-	pub emoji: usize,
-	pub urls: usize
+	pub caps: i32,
+	pub emoji: i32,
+	pub urls: i32
+}
+
+impl UserOffences {
+
+	pub fn get_attribute(&self, name: &str) -> Option<i32> {
+		match name {
+			"caps" => Some(self.caps),
+			"emoji" => Some(self.emoji),
+			"urls" => Some(self.urls),
+			_ => None
+		}
+	}
+
+	pub fn set_attribute(mut self, name: &str, value: i32) -> Result<Self, ()>{
+		match name {
+			"caps" => self.caps = value,
+			"emoji" => self.emoji = value,
+			"urls" => self.urls = value,
+			_ => return Err(())
+		};
+		Ok(self)
+	}
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct UpdateCount {
+	pub count: String
 }
