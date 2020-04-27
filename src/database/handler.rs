@@ -627,7 +627,7 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		Ok(())
 	}
 
-	pub fn get_offences(&self, channel: &str, user: &str, service: &str) -> HandlerResult<UserOffences> {
+	pub fn get_offences(&self, channel: &str, service: &str, user: &str) -> HandlerResult<UserOffences> {
 		let filter = doc! {
 			"channel": channel,
 			"user": user,
@@ -640,6 +640,23 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		let document = offences_collection.find_one(Some(filter), None).map_err(|e| HandlerError::DatabaseError(e))?;
 		match document {
 			Some(doc) => Ok(from_bson::<UserOffences>(mongodb::Bson::Document(doc.clone())).unwrap()),
+			_ => Err(HandlerError::Error("no offences".to_string()))
+		}
+	}
+
+	pub fn get_offence(&self, channel: &str, service: &str, user: &str, ty: &str) -> HandlerResult<i32> {
+		let filter = doc! {
+			"channel": channel,
+			"user": user,
+			"service": service
+		};
+
+		let db = self.database.as_ref().expect("no database");
+		let offences_collection = db.collection("offences");
+
+		let document = offences_collection.find_one(Some(filter), None).map_err(|e| HandlerError::DatabaseError(e))?;
+		match document {
+			Some(doc) => Ok(from_bson::<UserOffences>(mongodb::Bson::Document(doc.clone())).unwrap().get_attribute(ty).unwrap_or(0)),
 			_ => Err(HandlerError::Error("no offences".to_string()))
 		}
 	}
@@ -666,7 +683,7 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		self.get_offences(channel, user, service).unwrap_or_else(|_| self.create_offence(channel, user, service).unwrap())
 	}
 
-	pub fn update_offence(&self, channel: &str, user: &str, service: &str, offence_type: &str, count: UpdateCount) -> HandlerResult<()> {
+	pub fn update_offence(&self, channel: &str, user: &str, service: &str, offence_type: &str, count: UpdateCount) -> HandlerResult<UserOffences> {
 		let db = self.database.as_ref().expect("no database");
 		let offences_collection = db.collection("offences");
 		let mut offence = self.get_or_create_offence(channel, user, service);
@@ -690,7 +707,7 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		}, doc! {
 			"$set": bson::to_bson(&offence).unwrap()
 		}, None) {
-			Ok(_) => Ok(()),
+			Ok(_) => Ok(offence),
 			Err(e) => Err(HandlerError::DatabaseError(e))
 		}
 	}

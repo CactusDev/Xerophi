@@ -66,6 +66,10 @@ fn main() {
 			    	endpoints::social::get_socials, endpoints::social::get_social,
 			    	endpoints::social::create_social, endpoints::social::delete_social
 			    ])
+			    .mount("/offences", routes! [
+			    	endpoints::spam::get_user_offences, endpoints::spam::update_user_offences,
+			    	endpoints::spam::get_user_offence
+			    ])
 			    .launch();
 		},
         Err(e) => {
