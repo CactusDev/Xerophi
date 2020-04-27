@@ -212,6 +212,7 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		match operator {
 			"+" => current += remaining,
 			"-" => current -= remaining,
+			"@" => current = remaining,
 			_ => return Err(HandlerError::Error("invalid operator".to_string()))
 		}
 
@@ -677,6 +678,7 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		match operator {
 			"+" => current += remaining,
 			"-" => current -= remaining,
+			"@" => current = remaining,
 			_ => return Err(HandlerError::Error("invalid operator".to_string()))
 		}
 		offence = offence.set_attribute(offence_type, current).map_err(|_| HandlerError::Error("invalid offence type".to_string()))?;
