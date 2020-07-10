@@ -54,8 +54,21 @@ pub struct CommandMeta {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct EmojiMessageData {
+	pub standard: String,
+	pub alternatives: Vec<String>,	
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(untagged)]
+pub enum GenericMessageData {
+	Basic(String),
+	Emoji(EmojiMessageData)
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Message {
-	pub data: String,
+	pub data: GenericMessageData,
 	#[serde(rename = "type")]
 	pub message_type: String
 }
