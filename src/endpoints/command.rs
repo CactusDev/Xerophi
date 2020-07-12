@@ -17,7 +17,8 @@ use crate::{
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PostCommand {
 	pub response: Vec<Message>,
-	pub services: Vec<String>
+	pub services: Vec<String>,
+	pub role: String
 }
 
 #[get("/<channel>")]

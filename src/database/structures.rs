@@ -50,7 +50,8 @@ pub struct CommandMeta {
 	pub added_by: String,
 	pub cooldown: i32,
 	pub count: i32,
-	pub enabled: bool
+	pub enabled: bool,
+	pub role: String
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -98,7 +99,8 @@ impl Command {
 				added_by: "".to_string(),
 				cooldown: 0,
 				count: 0,
-				enabled: true
+				enabled: true,
+				role: cmd.role
 			},
 			name: name.to_string(),
 			response: cmd.response,
