@@ -145,10 +145,7 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		match document {
 			Some(doc) => match from_bson::<Command>(mongodb::Bson::Document(doc.clone())) {
 				Ok(cmd) => Ok(cmd),
-				Err(e) => {
-					println!("{:?}", e);
-					Err(HandlerError::Error("no command".to_string()))
-				}
+				Err(_e) => Err(HandlerError::Error("no command".to_string()))
 			},
 			_ => Err(HandlerError::Error("no command document".to_string()))
 		}
@@ -254,10 +251,7 @@ impl<'cfg> DatabaseHandler<'cfg> {
 			}
 		}, None) {
 			Ok(_) => Ok(previous_state.meta.enabled),
-			Err(e) => {
-				println!("{:?}", e);
-				Err(HandlerError::DatabaseError(e))
-			}
+			Err(e) => Err(HandlerError::DatabaseError(e))
 		}
 	}
 
