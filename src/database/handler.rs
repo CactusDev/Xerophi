@@ -219,7 +219,7 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		match operator {
 			"+" => current += remaining,
 			"-" => current -= remaining,
-			"@" => current = remaining,
+			"=" => current = remaining,
 			_ => return Err(HandlerError::Error("invalid operator".to_string()))
 		}
 

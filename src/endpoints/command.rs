@@ -43,15 +43,7 @@ pub fn get_commands<'r>(handler: State<DbConn>, channel: String) -> Response<'r>
 pub fn get_command<'r>(handler: State<DbConn>, channel: String, name: String) -> Response<'r> {
 	let command = handler.lock().expect("db lock").get_command(&channel, &name, true);
 	match command {
-		Ok(mut cmds) => {
-			// Update the command count.
-			let r = handler.lock().expect("db lock").update_count(&channel, &name, UpdateCount {
-				count: "+1".into()
-			});
-			cmds.meta.count = r.unwrap_or(0);
-
-			generate_response(Status::Ok, json!({ "data": cmds }))
-		},
+		Ok(cmds) => generate_response(Status::Ok, json!({ "data": cmds })),
 		Err(HandlerError::Error(_)) => generate_response(Status::NotFound, json!({})),
 		Err(e) => {
 			println!("Internal error getting command: {:?}", e);
