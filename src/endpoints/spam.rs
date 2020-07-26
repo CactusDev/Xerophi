@@ -19,7 +19,7 @@ pub fn get_user_offences<'r>(handler: State<DbConn>, channel: String, service: S
     let offences = handler.lock().expect("db lock").get_offences(&channel, &service, &user);
     match offences {
         Ok(offences) => generate_response(Status::Ok, json!({ "data": offences })),
-        Err(HandlerError::Error(_)) => generate_response(Status::NotFound, json!({})),
+        Err(HandlerError::Error(e)) => generate_response(Status::NotFound, generate_error(404, Some(e))),
         Err(e) => {
             println!("Internal error getting offenses: {:?}", e);
             generate_response(Status::InternalServerError, generate_error(500, None))
@@ -32,7 +32,7 @@ pub fn get_user_offence<'r>(handler: State<DbConn>, channel: String, service: St
     let offences = handler.lock().expect("db lock").get_offence(&channel, &service, &user, &key);
     match offences {
         Ok(offences) => generate_response(Status::Ok, json!({ "data": offences })),
-        Err(HandlerError::Error(e)) => generate_response(Status::NotFound, json!({})),
+        Err(HandlerError::Error(e)) => generate_response(Status::NotFound, generate_error(404, Some(e))),
         Err(e) => {
             println!("Internal error getting offenses: {:?}", e);
             generate_response(Status::InternalServerError, generate_error(500, None))
@@ -45,7 +45,7 @@ pub fn update_user_offences<'r>(handler: State<DbConn>, channel: String, service
     let offences = handler.lock().expect("db lock").update_offence(&channel, &user, &service, &key, update.into_inner());
     match offences {
         Ok(offences) => generate_response(Status::Ok, json!({ "data": offences })),
-        Err(HandlerError::Error(e)) => generate_response(Status::NotFound, json!({})),
+        Err(HandlerError::Error(e)) => generate_response(Status::NotFound, generate_error(404, Some(e))),
         Err(e) => {
             println!("Internal error getting command: {:?}", e);
             generate_response(Status::InternalServerError, generate_error(500, None))
