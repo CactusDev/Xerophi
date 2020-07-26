@@ -21,6 +21,11 @@ pub struct PostCommand {
 	pub role: String
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct UpdateState {
+	pub state: bool
+}
+
 #[get("/<channel>")]
 pub fn get_commands<'r>(handler: State<DbConn>, channel: String) -> Response<'r> {
 	let commands = handler.lock().expect("db lock").get_commands(&channel);
@@ -36,7 +41,7 @@ pub fn get_commands<'r>(handler: State<DbConn>, channel: String) -> Response<'r>
 
 #[get("/<channel>/<command>")]
 pub fn get_command<'r>(handler: State<DbConn>, channel: String, command: String) -> Response<'r> {
-	let command = handler.lock().expect("db lock").get_command(&channel, &command);
+	let command = handler.lock().expect("db lock").get_command(&channel, &command, true);
 	match command {
 		Ok(cmds) => generate_response(Status::Ok, json!({ "data": cmds })),
 		Err(HandlerError::Error(_)) => generate_response(Status::NotFound, json!({})),
@@ -107,6 +112,26 @@ pub fn update_count<'r>(handler: State<DbConn>, channel: String, name: String, c
 		Err(HandlerError::Error(e)) => generate_response(Status::NotFound, generate_error(404, Some(e))),
 		Err(e) => {
 			println!("Internal error updating count: {:?}", e);
+			generate_response(Status::InternalServerError, generate_error(500, None))
+		}
+	}
+}
+
+#[patch("/<channel>/<name>/state", format = "json", data = "<state>")]
+pub fn update_state<'r>(handler: State<DbConn>, channel: String, name: String, state: Json<UpdateState>) -> Response<'r> {
+	let result = handler.lock().expect("db lock").update_command_state(&channel, &name, state.into_inner().state);
+	match result {
+		Ok(old_state) => generate_response(Status::Ok, json!({
+			"data": json!({
+				"previous_state": old_state,
+			})
+		})),
+		Err(HandlerError::Error(e)) => {
+			println!("{:?}", e);
+			generate_response(Status::NotFound, generate_error(404, Some(e)))
+		},
+		Err(e) => {
+			println!("Internal error updating state: {:?}", e);
 			generate_response(Status::InternalServerError, generate_error(500, None))
 		}
 	}

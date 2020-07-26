@@ -52,7 +52,8 @@ fn main() {
 			    .mount("/command", routes! [
 			    	endpoints::command::get_commands, endpoints::command::get_command,
 			    	endpoints::command::create_command, endpoints::command::delete_command,
-			    	endpoints::command::edit_command, endpoints::command::update_count
+			    	endpoints::command::edit_command, endpoints::command::update_count,
+			    	endpoints::command::update_state
 			    ])
 			    .mount("/trust", routes! [
 			    	endpoints::trusts::get_trust, endpoints::trusts::get_trusts,

@@ -125,10 +125,18 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		Ok(all_documents)
 	}
 
-	pub fn get_command(&self, channel: &str, command: &str) -> HandlerResult<Command> {
-		let filter = doc! {
-			"name": command,
-			"channel": channel
+	pub fn get_command(&self, channel: &str, command: &str, enabled: bool) -> HandlerResult<Command> {
+		let filter = if enabled {
+			doc! {
+				"name": command,
+				"channel": channel,
+				"meta.enabled": true
+			}
+		} else {
+			doc! {
+				"name": command,
+				"channel": channel
+			}
 		};
 
         let db = self.database.as_ref().expect("no database");
@@ -137,14 +145,17 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		match document {
 			Some(doc) => match from_bson::<Command>(mongodb::Bson::Document(doc.clone())) {
 				Ok(cmd) => Ok(cmd),
-				_ => Err(HandlerError::Error("no command".to_string()))
+				Err(e) => {
+					println!("{:?}", e);
+					Err(HandlerError::Error("no command".to_string()))
+				}
 			},
-			_ => Err(HandlerError::Error("no command".to_string()))
+			_ => Err(HandlerError::Error("no command document".to_string()))
 		}
 	}
 
 	pub fn create_command(&self, channel: &str, name: &str, command: PostCommand) -> HandlerResult<Command> {
-		if let Ok(_) = self.get_command(channel, name) {
+		if let Ok(_) = self.get_command(channel, name, false) {
 			return Err(HandlerError::Error("command exists".to_string()));
 		}
 
@@ -157,7 +168,7 @@ impl<'cfg> DatabaseHandler<'cfg> {
 	}
 
 	pub fn remove_command(&self, channel: &str, command: &str) -> HandlerResult<()> {
-		if let Err(_) = self.get_command(channel, command) {
+		if let Err(_) = self.get_command(channel, command, true) {
 			return Err(HandlerError::Error("command does not exist".to_string()));
 		}
 
@@ -178,7 +189,7 @@ impl<'cfg> DatabaseHandler<'cfg> {
 	}
 
 	pub fn update_command(&self, channel: &str, name: &str, command: PostCommand) -> HandlerResult<()> {
-		if let Err(_) = self.get_command(channel, name) {
+		if let Err(_) = self.get_command(channel, name, true) {
 			return Err(HandlerError::Error("command does not exist".to_string()));
 		}
 
@@ -202,9 +213,8 @@ impl<'cfg> DatabaseHandler<'cfg> {
 	pub fn update_count(&self, channel: &str, command: &str, count: UpdateCount) -> HandlerResult<i32> {
 		let db = self.database.as_ref().expect("no database");
 		let command_collection = db.collection("commands");
-		let cmd = self.get_command(channel, command)?;
+		let cmd = self.get_command(channel, command, true)?;
 		let mut current = cmd.meta.count;
-
 
 		let (operator, remaining) = count.count.split_at(1);
 		let remaining = remaining.parse::<i32>().map_err(|_| HandlerError::Error("invalid count".to_string()))?;
@@ -226,6 +236,28 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		}, None) {
 			Ok(_) => Ok(current),
 			Err(e) => Err(HandlerError::DatabaseError(e))
+		}
+	}
+
+	pub fn update_command_state(&self, channel: &str, command: &str, state: bool) -> HandlerResult<bool> {
+		let previous_state = &self.get_command(channel, command, false)?;
+
+        let db = self.database.as_ref().expect("no database");
+		let command_collection = db.collection("commands");
+
+		match command_collection.update_one(doc! {
+			"channel": channel,
+			"name": command
+		}, doc! {
+			"$set": doc! {
+				"meta.enabled": state
+			}
+		}, None) {
+			Ok(_) => Ok(previous_state.meta.enabled),
+			Err(e) => {
+				println!("{:?}", e);
+				Err(HandlerError::DatabaseError(e))
+			}
 		}
 	}
 
@@ -499,7 +531,7 @@ impl<'cfg> DatabaseHandler<'cfg> {
 					match doc {
 						Ok(ref docs) => for doc in docs {
 							let alias = from_bson::<Alias>(mongodb::Bson::Document(doc.clone())).unwrap();
-				 	 		let command = self.get_command(channel, &alias.command)?;
+				 	 		let command = self.get_command(channel, &alias.command, true)?;
 				 	 		all_documents.push(command);
 						},
 				 	 	Err(_) => break
@@ -528,7 +560,7 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		match document {
 			Some(doc) => {
 				let alias = from_bson::<Alias>(mongodb::Bson::Document(doc.clone())).unwrap();
-				Ok(self.get_command(channel, &alias.command)?)
+				Ok(self.get_command(channel, &alias.command, true)?)
 			},
 			_ => Err(HandlerError::Error("no alias".to_string()))
 		}
