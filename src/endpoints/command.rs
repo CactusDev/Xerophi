@@ -39,11 +39,17 @@ pub fn get_commands<'r>(handler: State<DbConn>, channel: String) -> Response<'r>
 	}
 }
 
-#[get("/<channel>/<command>")]
-pub fn get_command<'r>(handler: State<DbConn>, channel: String, command: String) -> Response<'r> {
-	let command = handler.lock().expect("db lock").get_command(&channel, &command, true);
+#[get("/<channel>/<name>")]
+pub fn get_command<'r>(handler: State<DbConn>, channel: String, name: String) -> Response<'r> {
+	let command = handler.lock().expect("db lock").get_command(&channel, &name, true);
 	match command {
-		Ok(cmds) => generate_response(Status::Ok, json!({ "data": cmds })),
+		Ok(cmds) => {
+			// Update the command count.
+			handler.lock().expect("db lock").update_count(&channel, &name, UpdateCount {
+				count: "+1".into()
+			});
+			generate_response(Status::Ok, json!({ "data": cmds }))
+		},
 		Err(HandlerError::Error(_)) => generate_response(Status::NotFound, json!({})),
 		Err(e) => {
 			println!("Internal error getting command: {:?}", e);
