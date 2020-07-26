@@ -228,7 +228,7 @@ impl<'cfg> DatabaseHandler<'cfg> {
 			"name": command
 		}, doc! {
 			"$set": doc! {
-				"count": current
+				"meta.count": current
 			}
 		}, None) {
 			Ok(_) => Ok(current),
