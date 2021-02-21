@@ -55,7 +55,7 @@ pub fn create_social<'r>(handler: State<DbConn>, channel: String, service: Strin
 }
 
 
-#[delete("/<channel>/<service>", format = "json")]
+#[delete("/<channel>/<service>")]
 pub fn delete_social<'r>(handler: State<DbConn>, channel: String, service: String) -> Response<'r> {
 	let result = handler.lock().expect("db lock").remove_social(&channel, &service);
 	match result {
