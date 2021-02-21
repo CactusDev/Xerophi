@@ -5,7 +5,7 @@ authors = ["Innectic <innectic@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-rocket = "0.4.4"
+rocket = "0.4.7"
 serde_derive = "1.0.89"
 serde_json = "1.0.39"
 mongodb = "0.3.12"
@@ -14,7 +14,7 @@ chrono = "0.4.6"
 rust-argon2 = "0.4.0"
 
 [dependencies.rocket_contrib]
-version = "0.4.4"
+version = "0.4.7"
 default-features = false
 features = ["json"]
 
