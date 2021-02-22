@@ -423,10 +423,14 @@ impl<'cfg> DatabaseHandler<'cfg> {
 		let db = self.database.as_ref().expect("no database");
 		let quote_collection = db.collection("quotes");
 
-		quote_collection.delete_one(doc! {
+		let delete_result = quote_collection.delete_one(doc! {
 			"channel": channel,
 			"quote_id": quote
 		}, None).map_err(|e| HandlerError::DatabaseError(e))?;
+		if delete_result.deleted_count == 0 {
+			return Err(HandlerError::Error("invalid quote".into()));
+		}
+
 		Ok(())
 	}
 
